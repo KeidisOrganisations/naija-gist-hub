@@ -1,6 +1,7 @@
 
 import { Smartphone, Heart, DollarSign, Users, Newspaper } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from "@/hooks/use-toast";
 
 type CategoryData = {
   title: string;
@@ -55,6 +56,14 @@ const categories: CategoryData[] = [
 ];
 
 const CategorySection = () => {
+  const handleCategoryClick = (categoryTitle: string) => {
+    toast({
+      title: `Exploring ${categoryTitle}`,
+      description: `Showing the latest content for ${categoryTitle}`,
+      duration: 3000,
+    });
+  };
+
   return (
     <section className="py-16 bg-white">
       <div className="container px-4 mx-auto">
@@ -71,6 +80,7 @@ const CategorySection = () => {
               key={category.title}
               to={`/category/${category.slug}`}
               className="block group p-6 rounded-xl border border-gray-200 hover:border-transparent hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              onClick={() => handleCategoryClick(category.title)}
             >
               <div className="flex items-center gap-4">
                 <div className={`p-3 rounded-full ${category.bgColor} ${category.color} group-hover:scale-110 transition-transform`}>
