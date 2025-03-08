@@ -26,20 +26,20 @@ const Navbar = () => {
           <Link to="/" className="font-medium hover:text-naija-green transition-colors">
             Home
           </Link>
-          <Link to="/category/finance" className="font-medium hover:text-naija-green transition-colors">
-            Finance
-          </Link>
-          <Link to="/category/education" className="font-medium hover:text-naija-green transition-colors">
-            Education
-          </Link>
           <Link to="/category/tech" className="font-medium hover:text-naija-green transition-colors">
             Tech
           </Link>
-          <Link to="/category/business" className="font-medium hover:text-naija-green transition-colors">
-            Business
-          </Link>
           <Link to="/category/life" className="font-medium hover:text-naija-green transition-colors">
             Life
+          </Link>
+          <Link to="/category/money" className="font-medium hover:text-naija-green transition-colors">
+            Money
+          </Link>
+          <Link to="/category/relationships" className="font-medium hover:text-naija-green transition-colors">
+            Relationships
+          </Link>
+          <Link to="/category/news" className="font-medium hover:text-naija-green transition-colors">
+            News
           </Link>
         </nav>
 
@@ -65,20 +65,20 @@ const Navbar = () => {
             <Link to="/" className="font-medium p-2 hover:bg-naija-lightGreen rounded-md transition-colors">
               Home
             </Link>
-            <Link to="/category/finance" className="font-medium p-2 hover:bg-naija-lightGreen rounded-md transition-colors">
-              Finance
-            </Link>
-            <Link to="/category/education" className="font-medium p-2 hover:bg-naija-lightGreen rounded-md transition-colors">
-              Education
-            </Link>
             <Link to="/category/tech" className="font-medium p-2 hover:bg-naija-lightGreen rounded-md transition-colors">
               Tech
             </Link>
-            <Link to="/category/business" className="font-medium p-2 hover:bg-naija-lightGreen rounded-md transition-colors">
-              Business
-            </Link>
             <Link to="/category/life" className="font-medium p-2 hover:bg-naija-lightGreen rounded-md transition-colors">
               Life
+            </Link>
+            <Link to="/category/money" className="font-medium p-2 hover:bg-naija-lightGreen rounded-md transition-colors">
+              Money
+            </Link>
+            <Link to="/category/relationships" className="font-medium p-2 hover:bg-naija-lightGreen rounded-md transition-colors">
+              Relationships
+            </Link>
+            <Link to="/category/news" className="font-medium p-2 hover:bg-naija-lightGreen rounded-md transition-colors">
+              News
             </Link>
             <Button variant="outline" className="w-full rounded-full hover:bg-naija-lightGreen">
               Sign Up

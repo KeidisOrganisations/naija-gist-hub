@@ -59,28 +59,28 @@ const Footer = () => {
               <h3 className="text-lg font-medium mb-4 font-heading">Categories</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link to="/category/finance" className="text-gray-300 hover:text-naija-yellow transition-colors">
-                    Finance
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/category/education" className="text-gray-300 hover:text-naija-yellow transition-colors">
-                    Education
-                  </Link>
-                </li>
-                <li>
                   <Link to="/category/tech" className="text-gray-300 hover:text-naija-yellow transition-colors">
                     Tech
                   </Link>
                 </li>
                 <li>
-                  <Link to="/category/business" className="text-gray-300 hover:text-naija-yellow transition-colors">
-                    Business
+                  <Link to="/category/life" className="text-gray-300 hover:text-naija-yellow transition-colors">
+                    Life
                   </Link>
                 </li>
                 <li>
-                  <Link to="/category/life" className="text-gray-300 hover:text-naija-yellow transition-colors">
-                    Life
+                  <Link to="/category/money" className="text-gray-300 hover:text-naija-yellow transition-colors">
+                    Money
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/category/relationships" className="text-gray-300 hover:text-naija-yellow transition-colors">
+                    Relationships
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/category/news" className="text-gray-300 hover:text-naija-yellow transition-colors">
+                    News
                   </Link>
                 </li>
               </ul>

@@ -1,5 +1,5 @@
 
-import { Book, DollarSign, Briefcase, Smartphone, Heart } from 'lucide-react';
+import { Smartphone, Heart, DollarSign, Users, Newspaper } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type CategoryData = {
@@ -13,44 +13,44 @@ type CategoryData = {
 
 const categories: CategoryData[] = [
   {
-    title: "Finance",
-    description: "Money matters, investments, and cost-saving tips",
-    icon: DollarSign,
-    color: "text-green-600",
-    bgColor: "bg-green-100",
-    slug: "finance"
-  },
-  {
-    title: "Education",
-    description: "Learning resources and academic advice",
-    icon: Book,
-    color: "text-blue-600",
-    bgColor: "bg-blue-100",
-    slug: "education"
-  },
-  {
     title: "Tech",
-    description: "Gadgets, apps, and digital solutions",
+    description: "AI tools, online money-making, trending apps",
     icon: Smartphone,
     color: "text-purple-600",
     bgColor: "bg-purple-100",
     slug: "tech"
   },
   {
-    title: "Business",
-    description: "Entrepreneurship and career development",
-    icon: Briefcase,
-    color: "text-orange-600",
-    bgColor: "bg-orange-100",
-    slug: "business"
-  },
-  {
     title: "Life",
-    description: "Relationships, health, and everyday hacks",
+    description: "Travel tips, government documents, street smarts",
     icon: Heart,
     color: "text-red-600",
     bgColor: "bg-red-100",
     slug: "life"
+  },
+  {
+    title: "Money",
+    description: "Banking, savings, loans, investments, side hustles",
+    icon: DollarSign,
+    color: "text-green-600",
+    bgColor: "bg-green-100",
+    slug: "money"
+  },
+  {
+    title: "Relationships",
+    description: "Dating, friendships, family, networking tips",
+    icon: Users,
+    color: "text-blue-600",
+    bgColor: "bg-blue-100",
+    slug: "relationships"
+  },
+  {
+    title: "News",
+    description: "Trending Nigerian news, social media buzz, viral stories",
+    icon: Newspaper,
+    color: "text-orange-600",
+    bgColor: "bg-orange-100",
+    slug: "news"
   }
 ];
 
