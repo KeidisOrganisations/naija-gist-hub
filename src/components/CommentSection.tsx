@@ -22,14 +22,14 @@ const CommentSection = ({ articleId }: CommentSectionProps) => {
     {
       id: '1',
       name: 'Emeka Johnson',
-      content: 'This article is very helpful! I've been looking for ways to make money with AI and I'm definitely going to try some of these tools.',
+      content: "This article is very helpful! I've been looking for ways to make money with AI and I'm definitely going to try some of these tools.",
       date: '2 days ago',
       likes: 5,
     },
     {
       id: '2',
       name: 'Blessing Okafor',
-      content: 'I've been using ChatGPT for my freelance writing and it has really increased my productivity. Great tips!',
+      content: "I've been using ChatGPT for my freelance writing and it has really increased my productivity. Great tips!",
       date: '1 week ago',
       likes: 8,
     },
