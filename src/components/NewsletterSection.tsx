@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,16 @@ import { useToast } from "@/components/ui/use-toast";
 
 const NewsletterSection = () => {
   const [email, setEmail] = useState('');
+  const [subscribedEmails, setSubscribedEmails] = useState<string[]>([]);
   const { toast } = useToast();
+
+  // Load saved emails on component mount
+  useEffect(() => {
+    const savedEmails = localStorage.getItem('naijaHubSubscribers');
+    if (savedEmails) {
+      setSubscribedEmails(JSON.parse(savedEmails));
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +30,32 @@ const NewsletterSection = () => {
       return;
     }
 
-    // Here you would usually send the email to your backend
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Invalid email format!",
+        description: "Please enter a valid email address.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if email already exists
+    if (subscribedEmails.includes(email)) {
+      toast({
+        title: "You don already subscribe!",
+        description: "This email is already on our mailing list.",
+        variant: "warning"
+      });
+      return;
+    }
+
+    // Save email to localStorage
+    const updatedEmails = [...subscribedEmails, email];
+    localStorage.setItem('naijaHubSubscribers', JSON.stringify(updatedEmails));
+    setSubscribedEmails(updatedEmails);
+    
     toast({
       title: "Subscription successful!",
       description: "You don join our mailing list. We go dey send you the best gist!",
@@ -58,6 +92,11 @@ const NewsletterSection = () => {
           <p className="text-sm text-gray-500 mt-4">
             No spam, we promise! Unsubscribe anytime.
           </p>
+          {subscribedEmails.length > 0 && (
+            <p className="text-sm text-green-600 mt-2">
+              {subscribedEmails.length} subscribers and counting!
+            </p>
+          )}
         </div>
       </div>
     </section>

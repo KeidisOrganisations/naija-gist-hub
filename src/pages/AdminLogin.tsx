@@ -1,9 +1,9 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { LockKeyhole, Mail, AlertTriangle } from 'lucide-react';
+import { LockKeyhole, Mail, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const AdminLogin = () => {
@@ -11,16 +11,81 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lastAttemptTime, setLastAttemptTime] = useState<number | null>(null);
   const navigate = useNavigate();
+
+  // Check for existing login session
+  useEffect(() => {
+    const isAuthenticated = localStorage.getItem('naijaHubAdminAuth') === 'true';
+    const authTimestamp = localStorage.getItem('naijaHubAuthTimestamp');
+    
+    if (isAuthenticated && authTimestamp) {
+      const currentTime = new Date().getTime();
+      const authTime = parseInt(authTimestamp);
+      
+      // Session valid for 24 hours
+      if (currentTime - authTime < 24 * 60 * 60 * 1000) {
+        navigate('/admin/dashboard');
+      } else {
+        // Clear expired session
+        localStorage.removeItem('naijaHubAdminAuth');
+        localStorage.removeItem('naijaHubAuthTimestamp');
+      }
+    }
+    
+    // Check for previous login attempts
+    const attempts = localStorage.getItem('loginAttempts');
+    const attemptTime = localStorage.getItem('lastAttemptTime');
+    
+    if (attempts) {
+      setLoginAttempts(parseInt(attempts));
+    }
+    
+    if (attemptTime) {
+      setLastAttemptTime(parseInt(attemptTime));
+    }
+  }, [navigate]);
+
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    // Check if user is locked out
+    if (loginAttempts >= 5 && lastAttemptTime) {
+      const currentTime = new Date().getTime();
+      const timeDiff = currentTime - lastAttemptTime;
+      
+      // Lockout for 15 minutes (900000 ms)
+      if (timeDiff < 900000) {
+        const remainingMinutes = Math.ceil((900000 - timeDiff) / 60000);
+        setError(`Too many failed attempts. Please try again in ${remainingMinutes} minutes.`);
+        return;
+      } else {
+        // Reset attempts after lockout period
+        setLoginAttempts(0);
+        localStorage.setItem('loginAttempts', '0');
+      }
+    }
+    
     setIsLoading(true);
 
     // Simple validation
     if (!email.trim() || !password.trim()) {
       setError('Please enter both email and password');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
       setIsLoading(false);
       return;
     }
@@ -35,10 +100,30 @@ const AdminLogin = () => {
           description: 'Welcome back to Naija How-To Hub!',
           duration: 3000,
         });
-        // Store auth state in localStorage for demo purposes
+        
+        // Store auth state and timestamp in localStorage
+        const currentTime = new Date().getTime();
         localStorage.setItem('naijaHubAdminAuth', 'true');
+        localStorage.setItem('naijaHubAuthTimestamp', currentTime.toString());
+        
+        // Reset login attempts
+        setLoginAttempts(0);
+        localStorage.removeItem('loginAttempts');
+        localStorage.removeItem('lastAttemptTime');
+        
+        // Redirect to dashboard
         navigate('/admin/dashboard');
       } else {
+        // Increment failed login attempts
+        const newAttempts = loginAttempts + 1;
+        setLoginAttempts(newAttempts);
+        
+        const currentTime = new Date().getTime();
+        setLastAttemptTime(currentTime);
+        
+        localStorage.setItem('loginAttempts', newAttempts.toString());
+        localStorage.setItem('lastAttemptTime', currentTime.toString());
+        
         setError('Invalid email or password');
         toast({
           title: 'Login failed',
@@ -46,6 +131,16 @@ const AdminLogin = () => {
           variant: 'destructive',
           duration: 3000,
         });
+        
+        // Show lockout warning
+        if (newAttempts >= 3 && newAttempts < 5) {
+          toast({
+            title: 'Warning',
+            description: `You have ${5 - newAttempts} attempts remaining before your account is temporarily locked`,
+            variant: 'destructive',
+            duration: 5000,
+          });
+        }
       }
       setIsLoading(false);
     }, 1500);
@@ -60,6 +155,9 @@ const AdminLogin = () => {
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Oya, enter your password and let's get this work!
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            For demo: admin@naijahub.com / password123
           </p>
         </div>
         
@@ -109,14 +207,27 @@ const AdminLogin = () => {
                 <Input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 pr-10"
                   placeholder="••••••••"
                 />
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <button
+                    type="button"
+                    onClick={toggleShowPassword}
+                    className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
