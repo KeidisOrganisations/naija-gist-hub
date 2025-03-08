@@ -52,6 +52,11 @@ const Footer = () => {
                     Submit a Guide
                   </Link>
                 </li>
+                <li>
+                  <Link to="/admin/login" className="text-gray-300 hover:text-naija-yellow transition-colors">
+                    Admin Login
+                  </Link>
+                </li>
               </ul>
             </div>
             
