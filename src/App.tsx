@@ -10,6 +10,15 @@ import CategoryPage from "./pages/CategoryPage";
 import ArticlePage from "./pages/ArticlePage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import AdminArticles from "./pages/admin/AdminArticles";
+import AdminCategories from "./pages/admin/AdminCategories";
+import AdminMedia from "./pages/admin/AdminMedia";
+import AdminComments from "./pages/admin/AdminComments";
+import AdminNotifications from "./pages/admin/AdminNotifications";
+import AdminNewsletter from "./pages/admin/AdminNewsletter";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -23,10 +32,19 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/index" element={<Navigate to="/" replace />} />
           <Route path="/index.html" element={<Navigate to="/" replace />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/article/:id" element={<ArticlePage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/articles" element={<AdminArticles />} />
+          <Route path="/admin/categories" element={<AdminCategories />} />
+          <Route path="/admin/media" element={<AdminMedia />} />
+          <Route path="/admin/comments" element={<AdminComments />} />
+          <Route path="/admin/notifications" element={<AdminNotifications />} />
+          <Route path="/admin/newsletter" element={<AdminNewsletter />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,6 +1,7 @@
 
 import { ArrowRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Link } from 'react-router-dom';
 
 const Hero = () => {
   return (
@@ -18,10 +19,22 @@ const Hero = () => {
             No long talk, just straight to the point info wey go make your life better!
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Button className="bg-naija-charcoal hover:bg-naija-charcoal/90 text-white font-medium px-6 py-3 rounded-full">
-              Explore How-Tos
+            <Button 
+              className="bg-naija-charcoal hover:bg-naija-charcoal/90 text-white font-medium px-6 py-3 rounded-full"
+              asChild
+            >
+              <Link to="/category/tech">
+                Explore How-Tos
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
-            <Button variant="outline" className="border-naija-charcoal text-naija-charcoal hover:bg-naija-charcoal/10 font-medium px-6 py-3 rounded-full">
+            <Button 
+              variant="outline" 
+              className="border-naija-charcoal text-naija-charcoal hover:bg-naija-charcoal/10 font-medium px-6 py-3 rounded-full"
+              onClick={() => {
+                document.getElementById('newsletter-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
               Subscribe for Updates
             </Button>
           </div>
