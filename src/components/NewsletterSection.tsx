@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const NewsletterSection = () => {
   const [email, setEmail] = useState('');
@@ -46,7 +46,7 @@ const NewsletterSection = () => {
       toast({
         title: "You don already subscribe!",
         description: "This email is already on our mailing list.",
-        variant: "warning"
+        variant: "destructive" // Changed from "warning" to "destructive" to match allowed variants
       });
       return;
     }
