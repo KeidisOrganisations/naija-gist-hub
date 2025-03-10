@@ -3,7 +3,7 @@ import {
   Facebook, 
   Twitter, 
   Instagram, 
-  Whatsapp, 
+  MessageCircle,
   Share2,
   Copy
 } from 'lucide-react';
@@ -82,7 +82,7 @@ const SocialShareButtons = ({ url, title }: SocialShareButtonsProps) => {
           className="rounded-full w-9 h-9 p-0"
           aria-label="Share on WhatsApp"
         >
-          <Whatsapp className="h-4 w-4 text-green-500" />
+          <MessageCircle className="h-4 w-4 text-green-500" />
         </Button>
         <Button 
           onClick={handleCopyLink} 
