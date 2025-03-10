@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,6 @@ import {
   Trash2,
   MessageSquare,
   ExternalLink,
-  Filter,
 } from 'lucide-react';
 import {
   Table,
@@ -38,108 +37,211 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
-// Mock data
-const mockComments = [
-  {
-    id: 1,
-    author: "Emeka Johnson",
-    email: "emeka@example.com",
-    comment: "This article is very helpful! I've been looking for ways to make money with AI and these tips are practical for the Nigerian context.",
-    article: "How to Make Money with AI Tools in Nigeria",
-    articleId: 1,
-    status: "Approved",
-    date: "2023-10-15 14:32",
-  },
-  {
-    id: 2,
-    author: "Blessing Okafor",
-    email: "blessing@example.com",
-    comment: "I've been using ChatGPT for my freelance writing and it has really increased my productivity. Thank you for sharing these insights!",
-    article: "Top 5 AI Tools for Writers",
-    articleId: 2,
-    status: "Approved",
-    date: "2023-10-14 09:15",
-  },
-  {
-    id: 3,
-    author: "Tunde Adewale",
-    email: "tunde@example.com",
-    comment: "Thanks for this guide! Just opened my dollar account yesterday following these steps. The process was smooth.",
-    article: "How to Open a Dollar Account in Nigeria",
-    articleId: 4,
-    status: "Pending",
-    date: "2023-10-13 18:43",
-  },
-  {
-    id: 4,
-    author: "Funke Akindele",
-    email: "funke@example.com",
-    comment: "These tips really work! I've already connected with 3 potential business partners using the networking strategies you suggested.",
-    article: "Networking at Events: How to Make Valuable Connections",
-    articleId: 5,
-    status: "Approved",
-    date: "2023-10-12 11:27",
-  },
-  {
-    id: 5,
-    author: "spam_bot",
-    email: "spam@example.com",
-    comment: "Check out my website for amazing deals on designer bags! [link removed]",
-    article: "How to Open a Dollar Account in Nigeria",
-    articleId: 4,
-    status: "Spam",
-    date: "2023-10-11 03:12",
-  },
-  {
-    id: 6,
-    author: "Ibrahim Mohammed",
-    email: "ibrahim@example.com",
-    comment: "This budget template is exactly what I needed for my small business. The Excel formulas are well set up.",
-    article: "Free Budget Templates for Nigerian Small Businesses",
-    articleId: 6,
-    status: "Pending",
-    date: "2023-10-10 15:39",
-  },
-  {
-    id: 7,
-    author: "Ngozi Okonjo",
-    email: "ngozi@example.com",
-    comment: "As someone who has worked in finance for 10 years, I can confirm these investment strategies are sound. Great article!",
-    article: "Investment Opportunities in Nigeria's Growing Sectors",
-    articleId: 7,
-    status: "Approved",
-    date: "2023-10-09 17:22",
-  },
-  {
-    id: 8,
-    author: "David Adeleke",
-    email: "david@example.com",
-    comment: "The tips on dealing with Lagos traffic are spot on! I've started using the alternative routes you suggested and it's saved me hours.",
-    article: "Navigating Lagos Traffic: Insider Tips and Shortcuts",
-    articleId: 8,
-    status: "Pending",
-    date: "2023-10-08 08:54",
-  },
-];
+// Type for the comment data from Supabase
+interface Comment {
+  id: string;
+  author_name: string;
+  author_email: string;
+  content: string;
+  status: string;
+  created_at: string;
+  article: {
+    id: string;
+    title: string;
+  };
+}
+
+// Fetch comments from Supabase
+const fetchComments = async () => {
+  const { data, error } = await supabase
+    .from('comments')
+    .select(`
+      *,
+      article:articles(id, title)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data || [];
+};
+
+// Update comment status
+const updateCommentStatus = async ({ id, status }: { id: string; status: string }) => {
+  const { error } = await supabase
+    .from('comments')
+    .update({ status })
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return true;
+};
+
+// Delete a comment
+const deleteComment = async (id: string) => {
+  const { error } = await supabase
+    .from('comments')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return true;
+};
+
+// Batch update comment status
+const batchUpdateStatus = async ({ ids, status }: { ids: string[]; status: string }) => {
+  const { error } = await supabase
+    .from('comments')
+    .update({ status })
+    .in('id', ids);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return true;
+};
+
+// Batch delete comments
+const batchDeleteComments = async (ids: string[]) => {
+  const { error } = await supabase
+    .from('comments')
+    .delete()
+    .in('id', ids);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return true;
+};
 
 const AdminComments = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All');
-  const [selectedComments, setSelectedComments] = useState<number[]>([]);
-  const [replyTo, setReplyTo] = useState<any>(null);
+  const [selectedComments, setSelectedComments] = useState<string[]>([]);
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [replyText, setReplyText] = useState('');
-  const navigate = useNavigate();
+  
+  const queryClient = useQueryClient();
+
+  // Fetch comments with React Query
+  const {
+    data: comments = [],
+    isLoading,
+    isError,
+    error
+  } = useQuery({
+    queryKey: ['comments'],
+    queryFn: fetchComments
+  });
+
+  // Update comment status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: updateCommentStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments'] });
+      toast({
+        title: "Comment status updated",
+        description: "The comment status has been updated successfully.",
+        duration: 3000,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update comment status: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  });
+
+  // Delete comment mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteComment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments'] });
+      toast({
+        title: "Comment deleted",
+        description: "The comment has been deleted successfully.",
+        duration: 3000,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete comment: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  });
+
+  // Batch update status mutation
+  const batchUpdateMutation = useMutation({
+    mutationFn: batchUpdateStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments'] });
+      toast({
+        title: "Comments approved",
+        description: `${selectedComments.length} comments have been approved.`,
+        duration: 3000,
+      });
+      setSelectedComments([]);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to approve comments: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  });
+
+  // Batch delete mutation
+  const batchDeleteMutation = useMutation({
+    mutationFn: batchDeleteComments,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments'] });
+      toast({
+        title: "Comments deleted",
+        description: `${selectedComments.length} comments have been deleted.`,
+        duration: 3000,
+      });
+      setSelectedComments([]);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete comments: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  });
 
   // Filter comments based on search and filters
-  const filteredComments = mockComments.filter(comment => {
-    const matchesSearch = comment.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         comment.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         comment.article.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = selectedStatus === 'All' || comment.status === selectedStatus;
+  const filteredComments = comments.filter((comment: Comment) => {
+    const matchesSearch = comment.author_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         comment.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (comment.article?.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = selectedStatus === 'All' || comment.status === selectedStatus.toLowerCase();
     
     return matchesSearch && matchesStatus;
   });
@@ -152,7 +254,7 @@ const AdminComments = () => {
     }
   };
 
-  const handleSelectComment = (id: number) => {
+  const handleSelectComment = (id: string) => {
     if (selectedComments.includes(id)) {
       setSelectedComments(selectedComments.filter(commentId => commentId !== id));
     } else {
@@ -160,57 +262,31 @@ const AdminComments = () => {
     }
   };
 
-  const handleApprove = (id: number) => {
-    // In a real app, you would send a request to your backend
-    toast({
-      title: "Comment approved",
-      description: "The comment has been approved and published.",
-      duration: 3000,
-    });
+  const handleApprove = (id: string) => {
+    updateStatusMutation.mutate({ id, status: 'approved' });
   };
 
   const handleApproveSelected = () => {
     if (selectedComments.length === 0) return;
     
-    // In a real app, you would send a request to your backend
-    toast({
-      title: `${selectedComments.length} comments approved`,
-      description: "The selected comments have been approved and published.",
-      duration: 3000,
-    });
-    
-    setSelectedComments([]);
-  };
-
-  const handleSpam = (id: number) => {
-    // In a real app, you would send a request to your backend
-    toast({
-      title: "Comment marked as spam",
-      description: "The comment has been marked as spam and removed from public view.",
-      duration: 3000,
+    batchUpdateMutation.mutate({
+      ids: selectedComments,
+      status: 'approved'
     });
   };
 
-  const handleDelete = (id: number) => {
-    // In a real app, you would send a request to your backend
-    toast({
-      title: "Comment deleted",
-      description: "The comment has been permanently deleted.",
-      duration: 3000,
-    });
+  const handleSpam = (id: string) => {
+    updateStatusMutation.mutate({ id, status: 'spam' });
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
   };
 
   const handleDeleteSelected = () => {
     if (selectedComments.length === 0) return;
     
-    // In a real app, you would send a request to your backend
-    toast({
-      title: `${selectedComments.length} comments deleted`,
-      description: "The selected comments have been permanently deleted.",
-      duration: 3000,
-    });
-    
-    setSelectedComments([]);
+    batchDeleteMutation.mutate(selectedComments);
   };
 
   const handleReply = () => {
@@ -224,16 +300,34 @@ const AdminComments = () => {
       return;
     }
 
-    // In a real app, you would send a request to your backend
+    // In a real implementation, you would send an email to the commenter here
     toast({
       title: "Reply sent",
-      description: `Your reply to ${replyTo.author} has been sent.`,
+      description: `Your reply to ${replyTo?.author_name} has been sent.`,
       duration: 3000,
     });
 
     setReplyTo(null);
     setReplyText('');
   };
+
+  const handleViewArticle = (articleId: string) => {
+    // Open article in a new tab
+    window.open(`/article/${articleId}`, '_blank');
+  };
+
+  if (isError) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <AdminSidebar />
+        <div className="flex-1 p-8">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            Error loading comments: {(error as Error).message}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -309,53 +403,66 @@ const AdminComments = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredComments.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      Loading comments...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredComments.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
                       No comments found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredComments.map(comment => (
+                  filteredComments.map((comment: Comment) => (
                     <TableRow key={comment.id}>
                       <TableCell>
                         <Checkbox
                           checked={selectedComments.includes(comment.id)}
                           onCheckedChange={() => handleSelectComment(comment.id)}
-                          aria-label={`Select comment by ${comment.author}`}
+                          aria-label={`Select comment by ${comment.author_name}`}
                         />
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{comment.author}</p>
-                          <p className="text-xs text-gray-500">{comment.email}</p>
+                          <p className="font-medium">{comment.author_name}</p>
+                          <p className="text-xs text-gray-500">{comment.author_email}</p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <p className="line-clamp-2 max-w-xs">{comment.comment}</p>
+                        <p className="line-clamp-2 max-w-xs">{comment.content}</p>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center">
-                          <p className="truncate max-w-[150px]">{comment.article}</p>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 ml-1">
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
+                          <p className="truncate max-w-[150px]">{comment.article?.title || 'Unknown Article'}</p>
+                          {comment.article && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0 ml-1"
+                              onClick={() => handleViewArticle(comment.article.id)}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
                         <span 
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                            ${comment.status === 'Approved' ? 'bg-green-100 text-green-800' : 
-                              comment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 
+                            ${comment.status === 'approved' ? 'bg-green-100 text-green-800' : 
+                              comment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
                               'bg-red-100 text-red-800'}`
                           }
                         >
-                          {comment.status}
+                          {comment.status.charAt(0).toUpperCase() + comment.status.slice(1)}
                         </span>
                       </TableCell>
-                      <TableCell>{comment.date}</TableCell>
+                      <TableCell>{format(new Date(comment.created_at), 'yyyy-MM-dd HH:mm')}</TableCell>
                       <TableCell className="flex justify-end gap-2">
-                        {comment.status === 'Pending' && (
+                        {comment.status === 'pending' && (
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -365,7 +472,7 @@ const AdminComments = () => {
                             <CheckCircle className="h-4 w-4" />
                           </Button>
                         )}
-                        {comment.status !== 'Spam' && (
+                        {comment.status !== 'spam' && (
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -390,12 +497,12 @@ const AdminComments = () => {
                             <DialogHeader>
                               <DialogTitle>Reply to Comment</DialogTitle>
                               <DialogDescription>
-                                Your reply will be sent to {replyTo?.author}'s email address.
+                                Your reply will be sent to {replyTo?.author_name}'s email address.
                               </DialogDescription>
                             </DialogHeader>
                             <div className="bg-gray-50 p-3 rounded-md mb-4">
-                              <p className="text-sm font-medium">{replyTo?.author} wrote:</p>
-                              <p className="text-sm text-gray-600 mt-1">{replyTo?.comment}</p>
+                              <p className="text-sm font-medium">{replyTo?.author_name} wrote:</p>
+                              <p className="text-sm text-gray-600 mt-1">{replyTo?.content}</p>
                             </div>
                             <Textarea
                               placeholder="Type your reply here..."
@@ -404,12 +511,14 @@ const AdminComments = () => {
                               onChange={(e) => setReplyText(e.target.value)}
                             />
                             <DialogFooter>
-                              <Button variant="outline" onClick={() => {
-                                setReplyTo(null);
-                                setReplyText('');
-                              }}>
-                                Cancel
-                              </Button>
+                              <DialogClose asChild>
+                                <Button variant="outline" onClick={() => {
+                                  setReplyTo(null);
+                                  setReplyText('');
+                                }}>
+                                  Cancel
+                                </Button>
+                              </DialogClose>
                               <Button onClick={handleReply}>Send Reply</Button>
                             </DialogFooter>
                           </DialogContent>

@@ -1,6 +1,7 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,112 +30,198 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
-// Mock data
-const mockArticles = [
-  {
-    id: 1,
-    title: "How to Make Money with AI Tools in Nigeria",
-    category: "Tech",
-    status: "Published",
-    date: "2023-10-15",
-    author: "John Doe",
-    views: 12453,
-  },
-  {
-    id: 2,
-    title: "Top 5 Apps Every Nigerian Student Should Have",
-    category: "Tech",
-    status: "Published",
-    date: "2023-10-10",
-    author: "Jane Smith",
-    views: 8932,
-  },
-  {
-    id: 3,
-    title: "Getting Your International Passport Without Stress",
-    category: "Life",
-    status: "Published",
-    date: "2023-10-05",
-    author: "Michael Johnson",
-    views: 7845,
-  },
-  {
-    id: 4,
-    title: "How to Open a Dollar Account in Nigeria",
-    category: "Money",
-    status: "Draft",
-    date: "2023-10-01",
-    author: "Sarah Brown",
-    views: 0,
-  },
-  {
-    id: 5,
-    title: "Dating in Lagos: Finding Genuine Connections",
-    category: "Relationships",
-    status: "Published",
-    date: "2023-09-28",
-    author: "David Wilson",
-    views: 5421,
-  },
-  {
-    id: 6,
-    title: "Best Ways to Save Money in Nigeria's Economy",
-    category: "Money",
-    status: "Pending",
-    date: "2023-09-25",
-    author: "Lisa Anderson",
-    views: 0,
-  },
-  {
-    id: 7,
-    title: "Nigerian Wedding Planning on a Budget",
-    category: "Life",
-    status: "Published",
-    date: "2023-09-20",
-    author: "Robert Taylor",
-    views: 4532,
-  },
-  {
-    id: 8,
-    title: "How to Start a Tech Career in Nigeria",
-    category: "Tech",
-    status: "Published",
-    date: "2023-09-15",
-    author: "Emma Davis",
-    views: 6789,
-  },
-];
+// Type for the article data from Supabase
+interface Article {
+  id: string;
+  title: string;
+  category_id: string;
+  status: string;
+  created_at: string;
+  author_id: string | null;
+  view_count: number;
+  category?: {
+    name: string;
+  };
+  author?: {
+    first_name: string;
+    last_name: string;
+  };
+}
+
+// Fetch articles from Supabase
+const fetchArticles = async () => {
+  const { data, error } = await supabase
+    .from('articles')
+    .select(`
+      *,
+      category:categories(name)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data || [];
+};
+
+// Fetch categories from Supabase
+const fetchCategories = async () => {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .order('name');
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data || [];
+};
+
+// Delete an article
+const deleteArticle = async (id: string) => {
+  const { error } = await supabase
+    .from('articles')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return true;
+};
+
+// Update article status
+const updateArticleStatus = async ({ ids, status }: { ids: string[], status: string }) => {
+  const { error } = await supabase
+    .from('articles')
+    .update({ status })
+    .in('id', ids);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return true;
+};
 
 const AdminArticles = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedArticles, setSelectedArticles] = useState<number[]>([]);
+  const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Fetch articles with React Query
+  const {
+    data: articles = [],
+    isLoading,
+    isError,
+    error
+  } = useQuery({
+    queryKey: ['articles'],
+    queryFn: fetchArticles
+  });
+
+  // Fetch categories with React Query
+  const {
+    data: categories = [],
+    isLoading: isCategoriesLoading
+  } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories
+  });
+
+  // Delete article mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteArticle,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['articles'] });
+      toast({
+        title: "Article deleted",
+        description: "The article has been successfully deleted.",
+        duration: 3000,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete article: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  });
+
+  // Update status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: updateArticleStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['articles'] });
+      toast({
+        title: "Status updated",
+        description: `Articles have been ${selectedArticles.length > 1 ? 'updated' : 'published'}.`,
+        duration: 3000,
+      });
+      setSelectedArticles([]);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update status: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  });
 
   // Filter articles based on search and filters
-  const filteredArticles = mockArticles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         article.author.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = selectedStatus === 'All' || article.status === selectedStatus;
-    const matchesCategory = selectedCategory === 'All' || article.category === selectedCategory;
+  const filteredArticles = articles.filter((article: Article) => {
+    const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = selectedStatus === 'All' || article.status === selectedStatus.toLowerCase();
+    const matchesCategory = selectedCategory === 'All' || 
+      (article.category && article.category.name === selectedCategory);
     
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
+  // Pagination
+  const totalPages = Math.ceil(filteredArticles.length / pageSize);
+  const paginatedArticles = filteredArticles.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   const handleSelectAll = () => {
-    if (selectedArticles.length === filteredArticles.length) {
+    if (selectedArticles.length === paginatedArticles.length) {
       setSelectedArticles([]);
     } else {
-      setSelectedArticles(filteredArticles.map(article => article.id));
+      setSelectedArticles(paginatedArticles.map(article => article.id));
     }
   };
 
-  const handleSelectArticle = (id: number) => {
+  const handleSelectArticle = (id: string) => {
     if (selectedArticles.includes(id)) {
       setSelectedArticles(selectedArticles.filter(articleId => articleId !== id));
     } else {
@@ -145,28 +232,68 @@ const AdminArticles = () => {
   const handleDeleteSelected = () => {
     if (selectedArticles.length === 0) return;
     
-    // In a real app, you would send a request to your backend
-    toast({
-      title: `${selectedArticles.length} articles deleted`,
-      description: "The selected articles have been successfully deleted.",
-      duration: 3000,
-    });
-    
-    setSelectedArticles([]);
+    // Delete each selected article
+    Promise.all(selectedArticles.map(id => deleteMutation.mutateAsync(id)))
+      .then(() => {
+        toast({
+          title: `${selectedArticles.length} articles deleted`,
+          description: "The selected articles have been successfully deleted.",
+          duration: 3000,
+        });
+        setSelectedArticles([]);
+      })
+      .catch((error) => {
+        toast({
+          title: "Error",
+          description: `Failed to delete articles: ${error.message}`,
+          variant: "destructive",
+          duration: 5000,
+        });
+      });
   };
 
   const handlePublishSelected = () => {
     if (selectedArticles.length === 0) return;
     
-    // In a real app, you would send a request to your backend
-    toast({
-      title: `${selectedArticles.length} articles published`,
-      description: "The selected articles have been successfully published.",
-      duration: 3000,
+    updateStatusMutation.mutate({
+      ids: selectedArticles,
+      status: 'published'
     });
-    
-    setSelectedArticles([]);
   };
+
+  const handleDeleteArticle = (id: string) => {
+    deleteMutation.mutate(id);
+  };
+
+  const handleCreateArticle = () => {
+    navigate('/admin/articles/new');
+  };
+
+  const handleEditArticle = (id: string) => {
+    navigate(`/admin/articles/edit/${id}`);
+  };
+
+  const handleViewArticle = (id: string) => {
+    // Get the article's slug
+    const article = articles.find((a: Article) => a.id === id);
+    if (article) {
+      // Open in a new tab
+      window.open(`/article/${id}`, '_blank');
+    }
+  };
+
+  if (isError) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <AdminSidebar />
+        <div className="flex-1 p-8">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            Error loading articles: {(error as Error).message}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -177,7 +304,11 @@ const AdminArticles = () => {
         <header className="sticky top-0 z-10 flex h-16 items-center bg-white px-6 shadow-sm">
           <div className="flex flex-1 items-center justify-between">
             <h1 className="text-2xl font-bold">Articles</h1>
-            <Button variant="default" className="bg-naija-green hover:bg-naija-green/90">
+            <Button 
+              variant="default" 
+              className="bg-naija-green hover:bg-naija-green/90"
+              onClick={handleCreateArticle}
+            >
               <Plus className="mr-2 h-4 w-4" />
               New Article
             </Button>
@@ -217,10 +348,11 @@ const AdminArticles = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Categories</SelectItem>
-                  <SelectItem value="Tech">Tech</SelectItem>
-                  <SelectItem value="Life">Life</SelectItem>
-                  <SelectItem value="Money">Money</SelectItem>
-                  <SelectItem value="Relationships">Relationships</SelectItem>
+                  {categories.map((category: any) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -246,7 +378,7 @@ const AdminArticles = () => {
                 <TableRow>
                   <TableHead className="w-[40px]">
                     <Checkbox 
-                      checked={selectedArticles.length === filteredArticles.length && filteredArticles.length > 0}
+                      checked={selectedArticles.length === paginatedArticles.length && paginatedArticles.length > 0}
                       onCheckedChange={handleSelectAll}
                       aria-label="Select all articles"
                     />
@@ -255,20 +387,25 @@ const AdminArticles = () => {
                   <TableHead>Category</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Author</TableHead>
                   <TableHead>Views</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredArticles.length === 0 ? (
+                {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      Loading articles...
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedArticles.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
                       No articles found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredArticles.map(article => (
+                  paginatedArticles.map((article: Article) => (
                     <TableRow key={article.id}>
                       <TableCell>
                         <Checkbox
@@ -278,31 +415,65 @@ const AdminArticles = () => {
                         />
                       </TableCell>
                       <TableCell className="font-medium">{article.title}</TableCell>
-                      <TableCell>{article.category}</TableCell>
+                      <TableCell>{article.category ? article.category.name : 'Uncategorized'}</TableCell>
                       <TableCell>
                         <span 
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                            ${article.status === 'Published' ? 'bg-green-100 text-green-800' : 
-                              article.status === 'Draft' ? 'bg-gray-100 text-gray-800' : 
+                            ${article.status === 'published' ? 'bg-green-100 text-green-800' : 
+                              article.status === 'draft' ? 'bg-gray-100 text-gray-800' : 
                               'bg-yellow-100 text-yellow-800'}`
                           }
                         >
-                          {article.status}
+                          {article.status.charAt(0).toUpperCase() + article.status.slice(1)}
                         </span>
                       </TableCell>
-                      <TableCell>{article.date}</TableCell>
-                      <TableCell>{article.author}</TableCell>
-                      <TableCell>{article.views.toLocaleString()}</TableCell>
+                      <TableCell>
+                        {format(new Date(article.created_at), 'yyyy-MM-dd')}
+                      </TableCell>
+                      <TableCell>{article.view_count.toLocaleString()}</TableCell>
                       <TableCell className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleViewArticle(article.id)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleEditArticle(article.id)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Delete Article</DialogTitle>
+                              <DialogDescription>
+                                Are you sure you want to delete "{article.title}"? This action cannot be undone.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button variant="outline">Cancel</Button>
+                              </DialogClose>
+                              <Button 
+                                variant="destructive" 
+                                onClick={() => handleDeleteArticle(article.id)}
+                              >
+                                Delete
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
                       </TableCell>
                     </TableRow>
                   ))
@@ -314,14 +485,24 @@ const AdminArticles = () => {
           {/* Pagination */}
           <div className="mt-4 flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing {filteredArticles.length} of {mockArticles.length} articles
+              Showing {paginatedArticles.length} of {filteredArticles.length} articles
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
                 <ChevronLeft className="h-4 w-4" />
                 Previous
               </Button>
-              <Button variant="outline" size="sm" disabled>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
                 Next
                 <ChevronRight className="h-4 w-4" />
               </Button>

@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,77 +31,202 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-// Mock data
-const mockCategories = [
-  {
-    id: 1,
-    name: "Tech",
-    description: "Technology tips, gadget reviews, and digital skills for Nigerians.",
-    articleCount: 45,
-    slug: "tech",
-  },
-  {
-    id: 2,
-    name: "Money",
-    description: "Personal finance, investing, and money management in Nigeria.",
-    articleCount: 37,
-    slug: "money",
-  },
-  {
-    id: 3,
-    name: "Life",
-    description: "Everyday life hacks, health tips, and personal development.",
-    articleCount: 52,
-    slug: "life",
-  },
-  {
-    id: 4,
-    name: "Relationships",
-    description: "Dating, marriage, family, and friendship advice for Nigerians.",
-    articleCount: 29,
-    slug: "relationships",
-  },
-  {
-    id: 5,
-    name: "News",
-    description: "Latest Nigerian news and current events with practical analysis.",
-    articleCount: 41,
-    slug: "news",
-  },
-  {
-    id: 6,
-    name: "Education",
-    description: "Study tips, school hacks, and educational resources for students.",
-    articleCount: 18,
-    slug: "education",
-  },
-  {
-    id: 7,
-    name: "Business",
-    description: "Entrepreneurship, business tips, and career advice for Nigerians.",
-    articleCount: 33,
-    slug: "business",
-  },
-  {
-    id: 8,
-    name: "Travel",
-    description: "Travel guides, local destinations, and tourism tips in Nigeria.",
-    articleCount: 15,
-    slug: "travel",
-  },
-];
+// Type for the category data from Supabase
+interface Category {
+  id: string;
+  name: string;
+  description: string;
+  slug: string;
+}
+
+// Fetch categories from Supabase
+const fetchCategories = async () => {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .order('name');
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data || [];
+};
+
+// Fetch article count by category
+const fetchArticleCounts = async () => {
+  const { data, error } = await supabase
+    .from('articles')
+    .select('category_id, count')
+    .group('category_id');
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const counts: Record<string, number> = {};
+  data?.forEach(item => {
+    counts[item.category_id] = parseInt(item.count);
+  });
+  
+  return counts;
+};
+
+// Add a new category
+const addCategory = async (category: Omit<Category, 'id'>) => {
+  const { data, error } = await supabase
+    .from('categories')
+    .insert(category)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data;
+};
+
+// Update a category
+const updateCategory = async (category: Category) => {
+  const { data, error } = await supabase
+    .from('categories')
+    .update({
+      name: category.name,
+      description: category.description,
+      slug: category.slug
+    })
+    .eq('id', category.id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data;
+};
+
+// Delete a category
+const deleteCategory = async (id: string) => {
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return true;
+};
+
+// Generate a slug from a name
+const generateSlug = (name: string) => {
+  return name
+    .toLowerCase()
+    .replace(/[^\w\s]/gi, '')
+    .replace(/\s+/g, '-');
+};
 
 const AdminCategories = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
-  const [editCategory, setEditCategory] = useState<any>(null);
-  const navigate = useNavigate();
+  const [editCategory, setEditCategory] = useState<Category | null>(null);
+  
+  const queryClient = useQueryClient();
+
+  // Fetch categories with React Query
+  const {
+    data: categories = [],
+    isLoading,
+    isError,
+    error
+  } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories
+  });
+
+  // Fetch article counts with React Query
+  const {
+    data: articleCounts = {},
+    isLoading: isCountsLoading
+  } = useQuery({
+    queryKey: ['articleCounts'],
+    queryFn: fetchArticleCounts
+  });
+
+  // Add category mutation
+  const addMutation = useMutation({
+    mutationFn: addCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast({
+        title: "Category created",
+        description: `Category "${newCategoryName}" has been successfully created.`,
+        duration: 3000,
+      });
+      setNewCategoryName('');
+      setNewCategoryDescription('');
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to create category: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  });
+
+  // Update category mutation
+  const updateMutation = useMutation({
+    mutationFn: updateCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast({
+        title: "Category updated",
+        description: `Category has been successfully updated.`,
+        duration: 3000,
+      });
+      setEditCategory(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update category: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  });
+
+  // Delete category mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast({
+        title: "Category deleted",
+        description: `Category has been successfully deleted.`,
+        duration: 3000,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete category: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  });
 
   // Filter categories based on search
-  const filteredCategories = mockCategories.filter(category => 
+  const filteredCategories = categories.filter((category: Category) => 
     category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     category.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -117,19 +242,17 @@ const AdminCategories = () => {
       return;
     }
 
-    // In a real app, you would send a request to your backend
-    toast({
-      title: "Category created",
-      description: `Category "${newCategoryName}" has been successfully created.`,
-      duration: 3000,
-    });
+    const slug = generateSlug(newCategoryName);
 
-    setNewCategoryName('');
-    setNewCategoryDescription('');
+    addMutation.mutate({
+      name: newCategoryName,
+      description: newCategoryDescription,
+      slug
+    });
   };
 
   const handleUpdateCategory = () => {
-    if (!editCategory.name.trim()) {
+    if (!editCategory || !editCategory.name.trim()) {
       toast({
         title: "Category name required",
         description: "Please enter a name for the category.",
@@ -139,24 +262,35 @@ const AdminCategories = () => {
       return;
     }
 
-    // In a real app, you would send a request to your backend
-    toast({
-      title: "Category updated",
-      description: `Category "${editCategory.name}" has been successfully updated.`,
-      duration: 3000,
-    });
+    // Only regenerate slug if name changed
+    let slug = editCategory.slug;
+    const existingCategory = categories.find((c: Category) => c.id === editCategory.id);
+    if (existingCategory && existingCategory.name !== editCategory.name) {
+      slug = generateSlug(editCategory.name);
+    }
 
-    setEditCategory(null);
-  };
-
-  const handleDeleteCategory = (categoryId: number, categoryName: string) => {
-    // In a real app, you would send a request to your backend
-    toast({
-      title: "Category deleted",
-      description: `Category "${categoryName}" has been successfully deleted.`,
-      duration: 3000,
+    updateMutation.mutate({
+      ...editCategory,
+      slug
     });
   };
+
+  const handleDeleteCategory = (categoryId: string) => {
+    deleteMutation.mutate(categoryId);
+  };
+
+  if (isError) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <AdminSidebar />
+        <div className="flex-1 p-8">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            Error loading categories: {(error as Error).message}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -205,9 +339,7 @@ const AdminCategories = () => {
                   <DialogClose asChild>
                     <Button variant="outline">Cancel</Button>
                   </DialogClose>
-                  <DialogClose asChild>
-                    <Button onClick={handleAddCategory}>Add Category</Button>
-                  </DialogClose>
+                  <Button onClick={handleAddCategory}>Add Category</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -230,106 +362,110 @@ const AdminCategories = () => {
           </div>
           
           {/* Categories Grid */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCategories.map(category => (
-              <Card key={category.id}>
-                <CardHeader>
-                  <CardTitle>{category.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500 mb-4">{category.description}</p>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <FileText className="mr-2 h-4 w-4" />
-                    <span>{category.articleCount} Articles</span>
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setEditCategory({...category})}
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Edit Category</DialogTitle>
-                        <DialogDescription>
-                          Make changes to the "{category.name}" category.
-                        </DialogDescription>
-                      </DialogHeader>
-                      {editCategory && (
-                        <div className="grid gap-4 py-4">
-                          <div>
-                            <Label htmlFor="edit-name">Category Name</Label>
-                            <Input
-                              id="edit-name"
-                              value={editCategory.name}
-                              onChange={(e) => setEditCategory({...editCategory, name: e.target.value})}
-                            />
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Loading categories...</p>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredCategories.map((category: Category) => (
+                <Card key={category.id}>
+                  <CardHeader>
+                    <CardTitle>{category.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-500 mb-4">{category.description}</p>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <FileText className="mr-2 h-4 w-4" />
+                      <span>
+                        {articleCounts[category.id] || 0} Articles
+                      </span>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setEditCategory({...category})}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit Category</DialogTitle>
+                          <DialogDescription>
+                            Make changes to the "{category.name}" category.
+                          </DialogDescription>
+                        </DialogHeader>
+                        {editCategory && (
+                          <div className="grid gap-4 py-4">
+                            <div>
+                              <Label htmlFor="edit-name">Category Name</Label>
+                              <Input
+                                id="edit-name"
+                                value={editCategory.name}
+                                onChange={(e) => setEditCategory({...editCategory, name: e.target.value})}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="edit-description">Description</Label>
+                              <Textarea
+                                id="edit-description"
+                                value={editCategory.description}
+                                onChange={(e) => setEditCategory({...editCategory, description: e.target.value})}
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <Label htmlFor="edit-description">Description</Label>
-                            <Textarea
-                              id="edit-description"
-                              value={editCategory.description}
-                              onChange={(e) => setEditCategory({...editCategory, description: e.target.value})}
-                            />
-                          </div>
-                        </div>
-                      )}
-                      <DialogFooter>
-                        <DialogClose asChild>
-                          <Button variant="outline">Cancel</Button>
-                        </DialogClose>
-                        <DialogClose asChild>
+                        )}
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
                           <Button onClick={handleUpdateCategory}>Save Changes</Button>
-                        </DialogClose>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="destructive" 
-                        size="sm"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Delete Category</DialogTitle>
-                        <DialogDescription>
-                          Are you sure you want to delete the "{category.name}" category? This action cannot be undone.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <DialogFooter>
-                        <DialogClose asChild>
-                          <Button variant="outline">Cancel</Button>
-                        </DialogClose>
-                        <DialogClose asChild>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Delete Category</DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to delete the "{category.name}" category? This action cannot be undone.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
                           <Button 
                             variant="destructive" 
-                            onClick={() => handleDeleteCategory(category.id, category.name)}
+                            onClick={() => handleDeleteCategory(category.id)}
                           >
                             Delete
                           </Button>
-                        </DialogClose>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
           
-          {filteredCategories.length === 0 && (
+          {!isLoading && filteredCategories.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500">No categories found.</p>
             </div>
