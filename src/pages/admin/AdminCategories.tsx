@@ -55,20 +55,23 @@ const fetchCategories = async () => {
   return data || [];
 };
 
-// Fetch article count by category
+// Fetch article count by category - fixed function
 const fetchArticleCounts = async () => {
+  // First get all articles with their category ids
   const { data, error } = await supabase
     .from('articles')
-    .select('category_id, count')
-    .group('category_id');
+    .select('category_id');
 
   if (error) {
     throw new Error(error.message);
   }
 
+  // Manually count articles by category
   const counts: Record<string, number> = {};
-  data?.forEach(item => {
-    counts[item.category_id] = parseInt(item.count);
+  data?.forEach(article => {
+    if (article.category_id) {
+      counts[article.category_id] = (counts[article.category_id] || 0) + 1;
+    }
   });
   
   return counts;
