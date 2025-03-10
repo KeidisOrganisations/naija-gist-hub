@@ -20,6 +20,7 @@ import AdminComments from "./pages/admin/AdminComments";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminNewsletter from "./pages/admin/AdminNewsletter";
 import AdminSettings from "./pages/admin/AdminSettings";
+import Advertise from "./pages/Advertise";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/index.html" element={<Navigate to="/" replace />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/advertise" element={<Advertise />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/article/:id" element={<ArticlePage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
