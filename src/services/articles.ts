@@ -64,6 +64,20 @@ export const deleteArticle = async (id: string) => {
   return true;
 };
 
+// Delete multiple articles
+export const deleteMultipleArticles = async (ids: string[]) => {
+  const { error } = await supabase
+    .from('articles')
+    .delete()
+    .in('id', ids);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return true;
+};
+
 // Update article status
 export const updateArticleStatus = async ({ ids, status }: { ids: string[], status: string }) => {
   const { error } = await supabase

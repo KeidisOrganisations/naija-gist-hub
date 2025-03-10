@@ -7,6 +7,7 @@ import {
   fetchArticles, 
   fetchCategories, 
   deleteArticle, 
+  deleteMultipleArticles,
   updateArticleStatus 
 } from '@/services/articles';
 
@@ -55,6 +56,28 @@ export function useArticles() {
       toast({
         title: "Error",
         description: `Failed to delete article: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  });
+
+  // Delete multiple articles mutation
+  const deleteMultipleMutation = useMutation({
+    mutationFn: deleteMultipleArticles,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['articles'] });
+      toast({
+        title: "Articles deleted",
+        description: `${selectedArticles.length} articles have been successfully deleted.`,
+        duration: 3000,
+      });
+      setSelectedArticles([]);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete articles: ${error.message}`,
         variant: "destructive",
         duration: 5000,
       });
@@ -119,24 +142,8 @@ export function useArticles() {
   const handleDeleteSelected = () => {
     if (selectedArticles.length === 0) return;
     
-    // Delete each selected article
-    Promise.all(selectedArticles.map(id => deleteMutation.mutateAsync(id)))
-      .then(() => {
-        toast({
-          title: `${selectedArticles.length} articles deleted`,
-          description: "The selected articles have been successfully deleted.",
-          duration: 3000,
-        });
-        setSelectedArticles([]);
-      })
-      .catch((error) => {
-        toast({
-          title: "Error",
-          description: `Failed to delete articles: ${error.message}`,
-          variant: "destructive",
-          duration: 5000,
-        });
-      });
+    // Use the bulk delete mutation
+    deleteMultipleMutation.mutate(selectedArticles);
   };
 
   const handlePublishSelected = () => {

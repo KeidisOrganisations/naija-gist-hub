@@ -13,6 +13,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import AdminArticles from "./pages/admin/AdminArticles";
+import AdminArticleEditor from "./pages/admin/AdminArticleEditor";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminMedia from "./pages/admin/AdminMedia";
 import AdminComments from "./pages/admin/AdminComments";
@@ -39,6 +40,8 @@ const App = () => (
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/articles" element={<AdminArticles />} />
+          <Route path="/admin/articles/new" element={<AdminArticleEditor />} />
+          <Route path="/admin/articles/edit/:id" element={<AdminArticleEditor />} />
           <Route path="/admin/categories" element={<AdminCategories />} />
           <Route path="/admin/media" element={<AdminMedia />} />
           <Route path="/admin/comments" element={<AdminComments />} />
