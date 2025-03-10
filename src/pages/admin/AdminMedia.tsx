@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -25,8 +24,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
-// Mock data for media files
 const mockMediaFiles = [
   {
     id: 1,
@@ -111,10 +119,11 @@ const AdminMedia = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [mediaType, setMediaType] = useState<MediaType>('all');
   const [selectedFiles, setSelectedFiles] = useState<number[]>([]);
+  const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  const [folderName, setFolderName] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is authenticated for demo purposes
     const auth = localStorage.getItem('naijaHubAdminAuth');
     if (auth !== 'true') {
       toast({
@@ -129,7 +138,6 @@ const AdminMedia = () => {
     }
   }, [navigate]);
 
-  // Filter media files based on search and media type
   const filteredMediaFiles = mockMediaFiles.filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = mediaType === 'all' || file.type === mediaType;
@@ -156,7 +164,6 @@ const AdminMedia = () => {
   const handleDeleteSelected = () => {
     if (selectedFiles.length === 0) return;
     
-    // In a real app, you would send a request to your backend
     toast({
       title: `${selectedFiles.length} files deleted`,
       description: "The selected files have been successfully deleted.",
@@ -172,7 +179,6 @@ const AdminMedia = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      // In a real app, you would upload the files to your backend
       toast({
         title: `${e.target.files.length} files uploaded`,
         description: "Your files have been successfully uploaded.",
@@ -181,8 +187,20 @@ const AdminMedia = () => {
     }
   };
 
+  const handleCreateFolder = () => {
+    if (folderName.trim()) {
+      toast({
+        title: "Folder created",
+        description: `New folder "${folderName}" has been created successfully.`,
+        duration: 3000,
+      });
+      setFolderName('');
+      setIsCreateFolderOpen(false);
+    }
+  };
+
   if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
+    return null;
   }
 
   return (
@@ -190,7 +208,6 @@ const AdminMedia = () => {
       <AdminSidebar />
       
       <div className="flex-1 overflow-auto">
-        {/* Admin Header */}
         <header className="sticky top-0 z-10 flex h-16 items-center bg-white px-6 shadow-sm">
           <div className="flex flex-1 items-center justify-between">
             <h1 className="text-2xl font-bold">Media Library</h1>
@@ -202,10 +219,35 @@ const AdminMedia = () => {
                 className="hidden"
                 onChange={handleFileChange}
               />
-              <Button variant="outline" onClick={() => document.getElementById("create-folder-modal")?.showModal()}>
-                <FolderPlus className="mr-2 h-4 w-4" />
-                New Folder
-              </Button>
+              <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <FolderPlus className="mr-2 h-4 w-4" />
+                    New Folder
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Folder</DialogTitle>
+                    <DialogDescription>
+                      Enter a name for your new folder.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="my-4">
+                    <Input 
+                      value={folderName}
+                      onChange={(e) => setFolderName(e.target.value)}
+                      placeholder="Enter folder name" 
+                    />
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleCreateFolder}>Create Folder</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <Button variant="default" className="bg-naija-green hover:bg-naija-green/90" onClick={handleUploadClick}>
                 <Upload className="mr-2 h-4 w-4" />
                 Upload Files
@@ -215,7 +257,6 @@ const AdminMedia = () => {
         </header>
         
         <main className="p-6">
-          {/* Filters and Search */}
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -266,7 +307,6 @@ const AdminMedia = () => {
             </div>
           </div>
           
-          {/* Media Files Display */}
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {filteredMediaFiles.map(file => (
@@ -434,32 +474,6 @@ const AdminMedia = () => {
           )}
         </main>
       </div>
-
-      {/* Create Folder Modal (This would be better implemented with the Dialog component) */}
-      <dialog id="create-folder-modal" className="modal p-6 rounded-lg shadow-lg max-w-md bg-white">
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Create New Folder</h3>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Folder Name</label>
-            <Input className="mt-1" placeholder="Enter folder name" />
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => (document.getElementById("create-folder-modal") as HTMLDialogElement).close()}>
-              Cancel
-            </Button>
-            <Button onClick={() => {
-              toast({
-                title: "Folder created",
-                description: "New folder has been created successfully.",
-                duration: 3000,
-              });
-              (document.getElementById("create-folder-modal") as HTMLDialogElement).close();
-            }}>
-              Create Folder
-            </Button>
-          </div>
-        </div>
-      </dialog>
     </div>
   );
 };
