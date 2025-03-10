@@ -1,267 +1,518 @@
 
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, Upload } from 'lucide-react';
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Upload,
+  Save,
+  Moon,
+  Sun,
+  Globe,
+  Bell,
+  Mail,
+  User,
+  Shield,
+  Lock,
+} from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const AdminSettings = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [siteSettings, setSiteSettings] = useState({
+    siteName: 'Naija Hub',
+    siteDescription: 'Nigeria\'s premier destination for tech, lifestyle, and business insights.',
+    contactEmail: 'info@naijahub.com',
+    copyrightText: '© 2023 Naija Hub. All rights reserved.',
+    enableComments: true,
+    moderateComments: true,
+    enableNewsletter: true,
+    enableDarkMode: false,
+    socialLinks: {
+      facebook: 'https://facebook.com/naijahub',
+      twitter: 'https://twitter.com/naijahub',
+      instagram: 'https://instagram.com/naijahub',
+    }
+  });
+  
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is authenticated for demo purposes
+    const auth = localStorage.getItem('naijaHubAdminAuth');
+    if (auth !== 'true') {
+      toast({
+        title: "Authentication required",
+        description: "Please login to access the admin area",
+        variant: "destructive",
+        duration: 3000,
+      });
+      navigate('/admin/login');
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [navigate]);
+
+  const handleSiteSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setSiteSettings({
+      ...siteSettings,
+      [name]: value,
+    });
+  };
+
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    setSiteSettings({
+      ...siteSettings,
+      [name]: checked,
+    });
+  };
+
+  const handleSocialLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSiteSettings({
+      ...siteSettings,
+      socialLinks: {
+        ...siteSettings.socialLinks,
+        [name]: value,
+      },
+    });
+  };
+
+  const handleSaveSettings = (tab: string) => {
+    // In a real app, you would send the settings to your backend
+    toast({
+      title: "Settings saved",
+      description: `${tab} settings have been successfully saved.`,
+      duration: 3000,
+    });
+  };
+
+  const handleLogoUpload = () => {
+    document.getElementById("logo-upload")?.click();
+  };
+
+  const handleFaviconUpload = () => {
+    document.getElementById("favicon-upload")?.click();
+  };
+
+  if (!isAuthenticated) {
+    return null; // Will redirect in useEffect
+  }
+
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-50">
       <AdminSidebar />
-      <div className="flex-1 p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Settings</h1>
-          <p className="text-gray-600">Manage your website settings and preferences</p>
-        </div>
-
-        <Tabs defaultValue="general">
-          <TabsList className="mb-6">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            <TabsTrigger value="permissions">User Permissions</TabsTrigger>
-            <TabsTrigger value="notifications">Notification Settings</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="general">
-            <Card>
-              <CardHeader>
-                <CardTitle>General Settings</CardTitle>
-                <CardDescription>Configure your website's basic information</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="site-title">Site Title</Label>
-                  <Input id="site-title" defaultValue="Naija How-To Hub" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="site-description">Site Description</Label>
-                  <Textarea 
-                    id="site-description" 
-                    defaultValue="Practical guides on finance, education, tech, business, and everyday life in Nigeria." 
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="site-url">Site URL</Label>
-                  <Input id="site-url" defaultValue="https://naijahowto.netlify.app" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admin-email">Admin Email</Label>
-                  <Input id="admin-email" defaultValue="admin@naijahub.com" />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Logo & Favicon</Label>
-                  <div className="flex items-start space-x-6">
-                    <div className="space-y-2">
-                      <div className="h-24 w-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center bg-gray-50">
-                        <div className="text-center">
-                          <Upload className="h-6 w-6 mx-auto text-gray-400" />
-                          <span className="text-xs text-gray-500 mt-1">Logo</span>
+      
+      <div className="flex-1 overflow-auto">
+        {/* Admin Header */}
+        <header className="sticky top-0 z-10 flex h-16 items-center bg-white px-6 shadow-sm">
+          <div className="flex flex-1 items-center justify-between">
+            <h1 className="text-2xl font-bold">Settings</h1>
+            <div className="flex gap-2">
+              <Switch
+                checked={isDarkMode}
+                onCheckedChange={setIsDarkMode}
+                id="dark-mode"
+              />
+              <Label htmlFor="dark-mode" className="flex items-center gap-2">
+                {isDarkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                {isDarkMode ? 'Dark Mode' : 'Light Mode'}
+              </Label>
+            </div>
+          </div>
+        </header>
+        
+        <main className="p-6">
+          <Tabs defaultValue="general">
+            <TabsList className="mb-6">
+              <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="appearance">Appearance</TabsTrigger>
+              <TabsTrigger value="notifications">Notifications</TabsTrigger>
+              <TabsTrigger value="security">Security</TabsTrigger>
+            </TabsList>
+            
+            {/* General Settings */}
+            <TabsContent value="general">
+              <Card>
+                <CardHeader>
+                  <CardTitle>General Settings</CardTitle>
+                  <CardDescription>
+                    Configure the basic settings for your website.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="siteName">Site Name</Label>
+                        <Input
+                          id="siteName"
+                          name="siteName"
+                          value={siteSettings.siteName}
+                          onChange={handleSiteSettingsChange}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="contactEmail">Contact Email</Label>
+                        <Input
+                          id="contactEmail"
+                          name="contactEmail"
+                          type="email"
+                          value={siteSettings.contactEmail}
+                          onChange={handleSiteSettingsChange}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="siteDescription">Site Description</Label>
+                      <Textarea
+                        id="siteDescription"
+                        name="siteDescription"
+                        value={siteSettings.siteDescription}
+                        onChange={handleSiteSettingsChange}
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="copyrightText">Copyright Text</Label>
+                      <Input
+                        id="copyrightText"
+                        name="copyrightText"
+                        value={siteSettings.copyrightText}
+                        onChange={handleSiteSettingsChange}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="enableComments">Enable Comments</Label>
+                        <div className="text-sm text-gray-500">
+                          Allow visitors to comment on articles
                         </div>
                       </div>
-                      <Button variant="outline" size="sm" className="w-24">Upload</Button>
+                      <Switch
+                        id="enableComments"
+                        checked={siteSettings.enableComments}
+                        onCheckedChange={(checked) => handleSwitchChange('enableComments', checked)}
+                      />
                     </div>
-                    <div className="space-y-2">
-                      <div className="h-12 w-12 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center bg-gray-50">
-                        <div className="text-center">
-                          <Upload className="h-4 w-4 mx-auto text-gray-400" />
-                          <span className="text-[10px] text-gray-500">Favicon</span>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="moderateComments">Moderate Comments</Label>
+                        <div className="text-sm text-gray-500">
+                          Review and approve comments before they are published
                         </div>
                       </div>
-                      <Button variant="outline" size="sm" className="w-24">Upload</Button>
+                      <Switch
+                        id="moderateComments"
+                        checked={siteSettings.moderateComments}
+                        onCheckedChange={(checked) => handleSwitchChange('moderateComments', checked)}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="enableNewsletter">Enable Newsletter</Label>
+                        <div className="text-sm text-gray-500">
+                          Allow visitors to subscribe to your newsletter
+                        </div>
+                      </div>
+                      <Switch
+                        id="enableNewsletter"
+                        checked={siteSettings.enableNewsletter}
+                        onCheckedChange={(checked) => handleSwitchChange('enableNewsletter', checked)}
+                      />
                     </div>
                   </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button>
-                    <Save className="h-4 w-4 mr-2" />
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                  <Button onClick={() => handleSaveSettings('General')}>
+                    <Save className="mr-2 h-4 w-4" />
                     Save Changes
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="appearance">
-            <Card>
-              <CardHeader>
-                <CardTitle>Appearance Settings</CardTitle>
-                <CardDescription>Customize how your website looks</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="primary-color">Primary Color</Label>
-                  <div className="flex">
-                    <Input id="primary-color" defaultValue="#00913E" className="w-40" />
-                    <div className="w-10 h-10 ml-2 rounded" style={{ backgroundColor: '#00913E' }}></div>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            {/* Appearance Settings */}
+            <TabsContent value="appearance">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Appearance</CardTitle>
+                  <CardDescription>
+                    Customize the look and feel of your website.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 py-4">
+                    <div>
+                      <Label>Logo</Label>
+                      <div className="mt-2 flex items-center gap-4">
+                        <div className="h-24 w-24 bg-gray-100 flex items-center justify-center rounded-md">
+                          <img 
+                            src="/placeholder.svg" 
+                            alt="Site Logo" 
+                            className="h-16 w-16 opacity-50"
+                          />
+                        </div>
+                        <input
+                          type="file"
+                          id="logo-upload"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={() => toast({
+                            title: "Logo uploaded",
+                            description: "Your logo has been updated successfully.",
+                            duration: 3000,
+                          })}
+                        />
+                        <Button variant="outline" onClick={handleLogoUpload}>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Logo
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Favicon</Label>
+                      <div className="mt-2 flex items-center gap-4">
+                        <div className="h-16 w-16 bg-gray-100 flex items-center justify-center rounded-md">
+                          <img 
+                            src="/favicon.ico" 
+                            alt="Favicon" 
+                            className="h-8 w-8"
+                          />
+                        </div>
+                        <input
+                          type="file"
+                          id="favicon-upload"
+                          className="hidden"
+                          accept="image/x-icon,image/png"
+                          onChange={() => toast({
+                            title: "Favicon uploaded",
+                            description: "Your favicon has been updated successfully.",
+                            duration: 3000,
+                          })}
+                        />
+                        <Button variant="outline" onClick={handleFaviconUpload}>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Favicon
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="enableDarkMode">Enable Dark Mode Option</Label>
+                        <div className="text-sm text-gray-500">
+                          Allow visitors to switch between light and dark mode
+                        </div>
+                      </div>
+                      <Switch
+                        id="enableDarkMode"
+                        checked={siteSettings.enableDarkMode}
+                        onCheckedChange={(checked) => handleSwitchChange('enableDarkMode', checked)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Social Media Links</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        <div>
+                          <Label htmlFor="facebook" className="text-sm">Facebook</Label>
+                          <Input
+                            id="facebook"
+                            name="facebook"
+                            value={siteSettings.socialLinks.facebook}
+                            onChange={handleSocialLinkChange}
+                            placeholder="https://facebook.com/yourpage"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="twitter" className="text-sm">Twitter / X</Label>
+                          <Input
+                            id="twitter"
+                            name="twitter"
+                            value={siteSettings.socialLinks.twitter}
+                            onChange={handleSocialLinkChange}
+                            placeholder="https://twitter.com/yourhandle"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="instagram" className="text-sm">Instagram</Label>
+                          <Input
+                            id="instagram"
+                            name="instagram"
+                            value={siteSettings.socialLinks.instagram}
+                            onChange={handleSocialLinkChange}
+                            placeholder="https://instagram.com/yourprofile"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="secondary-color">Secondary Color</Label>
-                  <div className="flex">
-                    <Input id="secondary-color" defaultValue="#F9DA0A" className="w-40" />
-                    <div className="w-10 h-10 ml-2 rounded" style={{ backgroundColor: '#F9DA0A' }}></div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="font-family">Font Family</Label>
-                  <Select defaultValue="inter">
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a font" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="inter">Inter</SelectItem>
-                      <SelectItem value="montserrat">Montserrat</SelectItem>
-                      <SelectItem value="roboto">Roboto</SelectItem>
-                      <SelectItem value="opensans">Open Sans</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="theme-mode">Theme Mode</Label>
-                  <Select defaultValue="light">
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select theme mode" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">Light</SelectItem>
-                      <SelectItem value="dark">Dark</SelectItem>
-                      <SelectItem value="system">System</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button>
-                    <Save className="h-4 w-4 mr-2" />
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                  <Button onClick={() => handleSaveSettings('Appearance')}>
+                    <Save className="mr-2 h-4 w-4" />
                     Save Changes
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="permissions">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Permissions</CardTitle>
-                <CardDescription>Manage user roles and permissions</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between pb-4 border-b">
-                    <div>
-                      <h3 className="font-medium">Administrator</h3>
-                      <p className="text-sm text-gray-500">Full access to all settings and features</p>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            {/* Notifications Settings */}
+            <TabsContent value="notifications">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notifications</CardTitle>
+                  <CardDescription>
+                    Configure how you receive notifications from the system.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5 flex items-center">
+                        <Bell className="h-4 w-4 mr-2" />
+                        <div>
+                          <p className="text-sm font-medium">New Comments</p>
+                          <p className="text-xs text-gray-500">Receive notifications when new comments are posted</p>
+                        </div>
+                      </div>
+                      <Switch defaultChecked />
                     </div>
-                    <div className="flex gap-4">
-                      <Button variant="outline" size="sm">Edit Role</Button>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5 flex items-center">
+                        <User className="h-4 w-4 mr-2" />
+                        <div>
+                          <p className="text-sm font-medium">New Subscribers</p>
+                          <p className="text-xs text-gray-500">Receive notifications when new users subscribe</p>
+                        </div>
+                      </div>
+                      <Switch defaultChecked />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5 flex items-center">
+                        <Mail className="h-4 w-4 mr-2" />
+                        <div>
+                          <p className="text-sm font-medium">Email Digests</p>
+                          <p className="text-xs text-gray-500">Receive weekly email summaries of site activity</p>
+                        </div>
+                      </div>
+                      <Switch />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5 flex items-center">
+                        <Globe className="h-4 w-4 mr-2" />
+                        <div>
+                          <p className="text-sm font-medium">Site Updates</p>
+                          <p className="text-xs text-gray-500">Receive notifications about site updates and maintenance</p>
+                        </div>
+                      </div>
+                      <Switch defaultChecked />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pb-4 border-b">
-                    <div>
-                      <h3 className="font-medium">Editor</h3>
-                      <p className="text-sm text-gray-500">Can create and edit all content but can't modify settings</p>
-                    </div>
-                    <div className="flex gap-4">
-                      <Button variant="outline" size="sm">Edit Role</Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pb-4 border-b">
-                    <div>
-                      <h3 className="font-medium">Author</h3>
-                      <p className="text-sm text-gray-500">Can create and edit their own content</p>
-                    </div>
-                    <div className="flex gap-4">
-                      <Button variant="outline" size="sm">Edit Role</Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pb-4">
-                    <div>
-                      <h3 className="font-medium">Contributor</h3>
-                      <p className="text-sm text-gray-500">Can write and edit their own posts but cannot publish</p>
-                    </div>
-                    <div className="flex gap-4">
-                      <Button variant="outline" size="sm">Edit Role</Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button>
-                    <Save className="h-4 w-4 mr-2" />
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                  <Button onClick={() => handleSaveSettings('Notifications')}>
+                    <Save className="mr-2 h-4 w-4" />
                     Save Changes
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Settings</CardTitle>
-                <CardDescription>Configure your notification preferences</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between pb-4 border-b">
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            {/* Security Settings */}
+            <TabsContent value="security">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Security</CardTitle>
+                  <CardDescription>
+                    Manage security settings and access controls.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
                     <div>
-                      <h3 className="font-medium">Email Notifications</h3>
-                      <p className="text-sm text-gray-500">Receive notifications via email</p>
+                      <Label htmlFor="change-password">Change Admin Password</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        <Input 
+                          id="current-password" 
+                          type="password" 
+                          placeholder="Current Password" 
+                        />
+                        <Input 
+                          id="new-password" 
+                          type="password" 
+                          placeholder="New Password" 
+                        />
+                      </div>
+                      <Button className="mt-4" onClick={() => toast({
+                        title: "Password changed",
+                        description: "Your password has been successfully updated.",
+                        duration: 3000,
+                      })}>
+                        <Lock className="mr-2 h-4 w-4" />
+                        Update Password
+                      </Button>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="email-notifications" />
+                    <div className="mt-6">
+                      <Label>Two-Factor Authentication</Label>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-medium">Enable Two-Factor Authentication</p>
+                          <p className="text-xs text-gray-500">Add an extra layer of security to your account</p>
+                        </div>
+                        <Switch defaultChecked={false} />
+                      </div>
+                    </div>
+                    <div className="mt-6">
+                      <Label>Access Control</Label>
+                      <div className="space-y-2 mt-2">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5 flex items-center">
+                            <Shield className="h-4 w-4 mr-2" />
+                            <p className="text-sm font-medium">Require Login for Comments</p>
+                          </div>
+                          <Switch defaultChecked />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5 flex items-center">
+                            <Lock className="h-4 w-4 mr-2" />
+                            <p className="text-sm font-medium">IP Blocking</p>
+                          </div>
+                          <Switch defaultChecked />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pb-4 border-b">
-                    <div>
-                      <h3 className="font-medium">New Comments</h3>
-                      <p className="text-sm text-gray-500">Get notified when someone comments on your article</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="comment-notifications" defaultChecked />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pb-4 border-b">
-                    <div>
-                      <h3 className="font-medium">New Subscribers</h3>
-                      <p className="text-sm text-gray-500">Get notified when someone subscribes to your newsletter</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="subscriber-notifications" defaultChecked />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pb-4">
-                    <div>
-                      <h3 className="font-medium">System Notifications</h3>
-                      <p className="text-sm text-gray-500">Get notified about system updates and maintenance</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="system-notifications" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button>
-                    <Save className="h-4 w-4 mr-2" />
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                  <Button onClick={() => handleSaveSettings('Security')}>
+                    <Save className="mr-2 h-4 w-4" />
                     Save Changes
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </main>
       </div>
     </div>
   );
