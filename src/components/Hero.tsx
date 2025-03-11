@@ -2,8 +2,21 @@
 import { ArrowRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const Hero = () => {
+  const navigate = useNavigate();
+  
+  const scrollToNewsletter = () => {
+    const newsletterSection = document.getElementById('newsletter-section');
+    if (newsletterSection) {
+      newsletterSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // If newsletter section doesn't exist on current page, go to home and then scroll
+      navigate('/', { state: { scrollToNewsletter: true } });
+    }
+  };
+
   return (
     <section className="py-12 md:py-20 bg-gradient-to-r from-naija-lightGreen to-naija-lightYellow">
       <div className="container px-4 mx-auto">
@@ -31,9 +44,7 @@ const Hero = () => {
             <Button 
               variant="outline" 
               className="border-naija-charcoal text-naija-charcoal hover:bg-naija-charcoal/10 font-medium px-6 py-3 rounded-full"
-              onClick={() => {
-                document.getElementById('newsletter-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={scrollToNewsletter}
             >
               Subscribe for Updates
             </Button>

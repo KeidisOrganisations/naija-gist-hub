@@ -4,11 +4,13 @@ import { Send } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from 'react-router-dom';
 
 const NewsletterSection = () => {
   const [email, setEmail] = useState('');
   const [subscribedEmails, setSubscribedEmails] = useState<string[]>([]);
   const { toast } = useToast();
+  const location = useLocation();
 
   // Load saved emails on component mount
   useEffect(() => {
@@ -16,7 +18,14 @@ const NewsletterSection = () => {
     if (savedEmails) {
       setSubscribedEmails(JSON.parse(savedEmails));
     }
-  }, []);
+    
+    // Handle scroll if coming from another page
+    if (location.state && location.state.scrollToNewsletter) {
+      setTimeout(() => {
+        document.getElementById('newsletter-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
+    }
+  }, [location]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +74,7 @@ const NewsletterSection = () => {
   };
 
   return (
-    <section className="py-16 bg-naija-lightYellow">
+    <section id="newsletter-section" className="py-16 bg-naija-lightYellow">
       <div className="container px-4 mx-auto">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl font-bold font-heading mb-4">

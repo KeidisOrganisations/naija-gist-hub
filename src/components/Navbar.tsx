@@ -45,8 +45,8 @@ const Navbar = () => {
 
         {/* Search & Mobile Menu Toggle */}
         <div className="flex items-center gap-4">
-          <Button variant="outline" className="hidden md:flex rounded-full hover:bg-naija-lightGreen">
-            Sign Up
+          <Button variant="outline" className="hidden md:flex rounded-full hover:bg-naija-lightGreen" asChild>
+            <Link to="/signup">Sign Up</Link>
           </Button>
           <button
             onClick={toggleMenu}
@@ -80,8 +80,8 @@ const Navbar = () => {
             <Link to="/category/news" className="font-medium p-2 hover:bg-naija-lightGreen rounded-md transition-colors">
               News
             </Link>
-            <Button variant="outline" className="w-full rounded-full hover:bg-naija-lightGreen">
-              Sign Up
+            <Button variant="outline" className="w-full rounded-full hover:bg-naija-lightGreen" asChild>
+              <Link to="/signup">Sign Up</Link>
             </Button>
           </nav>
         </div>
