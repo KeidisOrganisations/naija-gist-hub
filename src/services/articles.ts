@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -28,6 +27,78 @@ export const fetchArticles = async () => {
       category:categories(name)
     `)
     .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data || [];
+};
+
+// Fetch articles by category slug
+export const fetchArticlesByCategory = async (categorySlug: string) => {
+  // First, get the category ID from the slug
+  const { data: categoryData, error: categoryError } = await supabase
+    .from('categories')
+    .select('id')
+    .eq('slug', categorySlug)
+    .single();
+
+  if (categoryError) {
+    throw new Error(`Category not found: ${categoryError.message}`);
+  }
+
+  // Then fetch articles for that category
+  const { data, error } = await supabase
+    .from('articles')
+    .select(`
+      *,
+      category:categories(name),
+      author:profiles(first_name, last_name)
+    `)
+    .eq('category_id', categoryData.id)
+    .eq('status', 'published')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data || [];
+};
+
+// Fetch latest articles with limit
+export const fetchLatestArticles = async (limit = 5) => {
+  const { data, error } = await supabase
+    .from('articles')
+    .select(`
+      *,
+      category:categories(name),
+      author:profiles(first_name, last_name)
+    `)
+    .eq('status', 'published')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data || [];
+};
+
+// Fetch trending articles based on view count
+export const fetchTrendingArticles = async (limit = 5) => {
+  const { data, error } = await supabase
+    .from('articles')
+    .select(`
+      *,
+      category:categories(name),
+      author:profiles(first_name, last_name)
+    `)
+    .eq('status', 'published')
+    .order('view_count', { ascending: false })
+    .limit(limit);
 
   if (error) {
     throw new Error(error.message);
@@ -96,13 +167,23 @@ export const updateArticleStatus = async ({ ids, status }: { ids: string[], stat
 export const fetchArticleById = async (id: string) => {
   const { data, error } = await supabase
     .from('articles')
-    .select('*')
+    .select(`
+      *,
+      category:categories(name),
+      author:profiles(first_name, last_name)
+    `)
     .eq('id', id)
     .single();
     
   if (error) {
     throw new Error(error.message);
   }
+  
+  // Increment view count
+  await supabase
+    .from('articles')
+    .update({ view_count: (data.view_count || 0) + 1 })
+    .eq('id', id);
   
   return data;
 };
