@@ -91,3 +91,40 @@ export const updateArticleStatus = async ({ ids, status }: { ids: string[], stat
   
   return true;
 };
+
+// Fetch a single article by ID
+export const fetchArticleById = async (id: string) => {
+  const { data, error } = await supabase
+    .from('articles')
+    .select('*')
+    .eq('id', id)
+    .single();
+    
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data;
+};
+
+// Create or update an article
+export const saveArticle = async (articleData: any, isNew: boolean) => {
+  if (isNew) {
+    const { data, error } = await supabase
+      .from('articles')
+      .insert([articleData])
+      .select();
+      
+    if (error) throw error;
+    return data[0];
+  } else {
+    const { data, error } = await supabase
+      .from('articles')
+      .update(articleData)
+      .eq('id', articleData.id)
+      .select();
+      
+    if (error) throw error;
+    return data[0];
+  }
+};

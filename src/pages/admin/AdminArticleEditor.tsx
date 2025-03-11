@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import { Button } from '@/components/ui/button';
@@ -17,17 +16,16 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save, Upload, Eye } from 'lucide-react';
-import { fetchCategories } from '@/services/articles';
+import { fetchCategories, fetchArticleById, saveArticle } from '@/services/articles';
+import { fetchMediaItems, uploadMediaFile } from '@/services/media';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
-import { fetchMediaItems } from '@/services/media';
 
 const AdminArticleEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,7 +41,7 @@ const AdminArticleEditor = () => {
   const [categoryId, setCategoryId] = useState('');
   const [featuredImage, setFeaturedImage] = useState('');
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
   // Fetch categories
   const { data: categories = [] } = useQuery({
@@ -52,7 +50,7 @@ const AdminArticleEditor = () => {
   });
   
   // Fetch media items for the media library
-  const { data: mediaItems = [] } = useQuery({
+  const { data: mediaItems = [], refetch: refetchMedia } = useQuery({
     queryKey: ['mediaItems'],
     queryFn: fetchMediaItems
   });
@@ -60,18 +58,7 @@ const AdminArticleEditor = () => {
   // Fetch article if editing
   const { data: article, isLoading: isArticleLoading } = useQuery({
     queryKey: ['article', id],
-    queryFn: async () => {
-      if (isNew) return null;
-      
-      const { data, error } = await supabase
-        .from('articles')
-        .select('*')
-        .eq('id', id)
-        .single();
-        
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => isNew ? null : fetchArticleById(id as string),
     enabled: !isNew && !!id
   });
   
@@ -100,24 +87,7 @@ const AdminArticleEditor = () => {
   // Save article mutation
   const saveMutation = useMutation({
     mutationFn: async (articleData: any) => {
-      if (isNew) {
-        const { data, error } = await supabase
-          .from('articles')
-          .insert([articleData])
-          .select();
-          
-        if (error) throw error;
-        return data[0];
-      } else {
-        const { data, error } = await supabase
-          .from('articles')
-          .update(articleData)
-          .eq('id', id)
-          .select();
-          
-        if (error) throw error;
-        return data[0];
-      }
+      return saveArticle(articleData, isNew);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
@@ -140,6 +110,30 @@ const AdminArticleEditor = () => {
         variant: "destructive",
         duration: 5000,
       });
+    }
+  });
+  
+  // Upload media mutation
+  const uploadMediaMutation = useMutation({
+    mutationFn: (file: File) => uploadMediaFile(file),
+    onSuccess: () => {
+      refetchMedia();
+      toast({
+        title: "Media uploaded",
+        description: "Your file has been uploaded successfully.",
+        duration: 3000,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Upload failed",
+        description: `Failed to upload media: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    },
+    onSettled: () => {
+      setIsUploadingMedia(false);
     }
   });
   
@@ -171,6 +165,14 @@ const AdminArticleEditor = () => {
   const handleSelectImage = (imageUrl: string) => {
     setFeaturedImage(imageUrl);
     setIsMediaLibraryOpen(false);
+  };
+  
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploadingMedia(true);
+      uploadMediaMutation.mutate(file);
+    }
   };
   
   // Filter for images only in the media library
@@ -327,7 +329,7 @@ const AdminArticleEditor = () => {
                     
                     <div>
                       <Label htmlFor="featured-image" className="text-sm font-medium">
-                        Featured Image URL
+                        Featured Image
                       </Label>
                       <Input 
                         id="featured-image"
@@ -351,17 +353,39 @@ const AdminArticleEditor = () => {
                         </div>
                       )}
                       
-                      <Dialog open={isMediaLibraryOpen} onOpenChange={setIsMediaLibraryOpen}>
-                        <DialogTrigger asChild>
+                      <div className="flex flex-col space-y-2 mt-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          type="button"
+                          onClick={() => setIsMediaLibraryOpen(true)}
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Select from Media Library
+                        </Button>
+                        
+                        <div className="relative">
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="mt-2 w-full"
+                            className="w-full"
+                            type="button"
+                            disabled={isUploadingMedia}
+                            onClick={() => document.getElementById('file-upload')?.click()}
                           >
-                            <Upload className="mr-2 h-4 w-4" />
-                            Select from Media Library
+                            {isUploadingMedia ? 'Uploading...' : 'Upload New Image'}
                           </Button>
-                        </DialogTrigger>
+                          <input 
+                            id="file-upload"
+                            type="file" 
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleFileUpload}
+                          />
+                        </div>
+                      </div>
+                      
+                      <Dialog open={isMediaLibraryOpen} onOpenChange={setIsMediaLibraryOpen}>
                         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle>Media Library</DialogTitle>
