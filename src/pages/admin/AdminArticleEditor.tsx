@@ -18,6 +18,16 @@ import {
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save, Upload, Eye } from 'lucide-react';
 import { fetchCategories } from '@/services/articles';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { fetchMediaItems } from '@/services/media';
 
 const AdminArticleEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,12 +42,19 @@ const AdminArticleEditor = () => {
   const [status, setStatus] = useState('draft');
   const [categoryId, setCategoryId] = useState('');
   const [featuredImage, setFeaturedImage] = useState('');
+  const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories
+  });
+  
+  // Fetch media items for the media library
+  const { data: mediaItems = [] } = useQuery({
+    queryKey: ['mediaItems'],
+    queryFn: fetchMediaItems
   });
   
   // Fetch article if editing
@@ -145,11 +162,21 @@ const AdminArticleEditor = () => {
       status: publishAfter ? 'published' : status,
       category_id: categoryId,
       featured_image: featuredImage,
-      published_at: publishAfter ? new Date().toISOString() : null
+      published_at: publishAfter && !article?.published_at ? new Date().toISOString() : article?.published_at
     };
     
     saveMutation.mutate(articleData);
   };
+
+  const handleSelectImage = (imageUrl: string) => {
+    setFeaturedImage(imageUrl);
+    setIsMediaLibraryOpen(false);
+  };
+  
+  // Filter for images only in the media library
+  const imageMediaItems = mediaItems.filter(item => 
+    item.file_type.startsWith('image/')
+  );
   
   return (
     <div className="flex h-screen bg-gray-50">
@@ -324,15 +351,66 @@ const AdminArticleEditor = () => {
                         </div>
                       )}
                       
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-2 w-full"
-                        onClick={() => navigate('/admin/media')}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Select from Media Library
-                      </Button>
+                      <Dialog open={isMediaLibraryOpen} onOpenChange={setIsMediaLibraryOpen}>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-2 w-full"
+                          >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Select from Media Library
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>Media Library</DialogTitle>
+                          </DialogHeader>
+                          
+                          {imageMediaItems.length === 0 ? (
+                            <div className="py-8 text-center">
+                              <p>No images found in the media library.</p>
+                              <Button 
+                                variant="outline" 
+                                className="mt-4"
+                                onClick={() => {
+                                  setIsMediaLibraryOpen(false);
+                                  navigate('/admin/media');
+                                }}
+                              >
+                                Go to Media Library
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
+                              {imageMediaItems.map((item) => (
+                                <div 
+                                  key={item.id} 
+                                  className="cursor-pointer border rounded-md overflow-hidden hover:ring-2 hover:ring-naija-green transition-all"
+                                  onClick={() => handleSelectImage(item.file_path)}
+                                >
+                                  <div className="aspect-square">
+                                    <img 
+                                      src={item.file_path} 
+                                      alt={item.name}
+                                      className="w-full h-full object-cover" 
+                                    />
+                                  </div>
+                                  <div className="p-2">
+                                    <p className="text-xs truncate">{item.name}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <DialogFooter>
+                            <DialogClose asChild>
+                              <Button variant="outline">Cancel</Button>
+                            </DialogClose>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
                 </div>
