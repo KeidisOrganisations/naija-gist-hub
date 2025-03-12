@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -43,26 +42,22 @@ const AdminArticleEditor = () => {
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
-  // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories
   });
   
-  // Fetch media items for the media library
   const { data: mediaItems = [], refetch: refetchMedia } = useQuery({
     queryKey: ['mediaItems'],
     queryFn: fetchMediaItems
   });
   
-  // Fetch article if editing
   const { data: article, isLoading: isArticleLoading } = useQuery({
     queryKey: ['article', id],
     queryFn: () => isNew ? null : fetchArticleById(id as string),
     enabled: !isNew && !!id
   });
   
-  // Set form data when article is loaded
   useEffect(() => {
     if (article) {
       setTitle(article.title || '');
@@ -75,7 +70,6 @@ const AdminArticleEditor = () => {
     }
   }, [article]);
   
-  // Auto-generate slug from title
   useEffect(() => {
     if (isNew && title) {
       setSlug(title.toLowerCase()
@@ -84,9 +78,8 @@ const AdminArticleEditor = () => {
     }
   }, [isNew, title]);
   
-  // Save article mutation
   const saveMutation = useMutation({
-    mutationFn: async (articleData: Partial<Article>) => {
+    mutationFn: async (articleData: Partial<Article> & { title: string; content: string; slug: string }) => {
       console.log('Saving article with data:', articleData);
       return saveArticle(articleData, isNew);
     },
@@ -114,7 +107,6 @@ const AdminArticleEditor = () => {
     }
   });
   
-  // Upload media mutation
   const uploadMediaMutation = useMutation({
     mutationFn: (file: File) => {
       console.log('Uploading file:', file.name);
@@ -129,7 +121,6 @@ const AdminArticleEditor = () => {
         duration: 3000,
       });
       
-      // If it's an image, automatically use it as featured image
       if (data && data.file_type.startsWith('image/')) {
         setFeaturedImage(data.file_path);
         setIsMediaLibraryOpen(false);
@@ -160,7 +151,7 @@ const AdminArticleEditor = () => {
       return;
     }
     
-    const articleData: Partial<Article> = {
+    const articleData: Partial<Article> & { title: string; content: string; slug: string } = {
       title,
       content,
       excerpt,
@@ -196,7 +187,6 @@ const AdminArticleEditor = () => {
     }
   };
   
-  // Filter for images only in the media library
   const imageMediaItems = mediaItems.filter(item => 
     item.file_type.startsWith('image/')
   );
