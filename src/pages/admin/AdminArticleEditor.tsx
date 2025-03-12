@@ -93,7 +93,7 @@ const AdminArticleEditor = () => {
         duration: 3000,
       });
       
-      if (isNew) {
+      if (isNew && data?.id) {
         navigate(`/admin/articles/edit/${data.id}`);
       }
     },

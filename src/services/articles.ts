@@ -214,6 +214,7 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
 
   try {
     if (isNew) {
+      // For new articles, we should use insert
       const { data, error } = await supabase
         .from('articles')
         .insert([articleData])
@@ -222,7 +223,7 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
       if (error) throw error;
       return data[0];
     } else {
-      // Ensure id is not undefined for updates
+      // For existing articles, we need the ID and use update
       if (!articleData.id) {
         throw new Error('Article ID is required for updates');
       }
