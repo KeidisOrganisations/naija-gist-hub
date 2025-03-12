@@ -80,7 +80,7 @@ const AdminArticleEditor = () => {
   
   const saveMutation = useMutation({
     mutationFn: async (articleData: Partial<Article> & { title: string; content: string; slug: string }) => {
-      console.log('Saving article with data:', articleData);
+      console.log('Saving article with data:', articleData, 'isNew:', isNew);
       return saveArticle(articleData, isNew);
     },
     onSuccess: (data) => {
@@ -179,7 +179,7 @@ const AdminArticleEditor = () => {
       articleData.id = article.id;
     }
     
-    console.log('Handling save with data:', articleData);
+    console.log('Handling save with data:', articleData, 'isNew:', isNew);
     saveMutation.mutate(articleData);
   };
 
@@ -490,3 +490,4 @@ const AdminArticleEditor = () => {
 };
 
 export default AdminArticleEditor;
+

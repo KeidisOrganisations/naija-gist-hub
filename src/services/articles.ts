@@ -213,11 +213,23 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
   }
 
   try {
+    console.log('Saving article with isNew:', isNew, 'article data:', articleData);
+    
     if (isNew) {
-      // For new articles, we should use insert
+      // For new articles, we should use insert and NEVER include the ID
       const { data, error } = await supabase
         .from('articles')
-        .insert([articleData])
+        .insert([{
+          title: articleData.title,
+          content: articleData.content,
+          slug: articleData.slug,
+          status: articleData.status || 'draft',
+          category_id: articleData.category_id,
+          author_id: articleData.author_id,
+          featured_image: articleData.featured_image,
+          excerpt: articleData.excerpt,
+          published_at: articleData.published_at
+        }])
         .select();
         
       if (error) throw error;
