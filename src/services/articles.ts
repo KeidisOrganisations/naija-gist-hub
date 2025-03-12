@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -12,16 +11,16 @@ export interface Article {
   view_count: number;
   category?: {
     name: string;
-  };
+  } | null;
   author?: {
-    first_name: string;
-    last_name: string;
-  };
-  content?: string;
-  excerpt?: string;
-  slug?: string;
-  featured_image?: string;
-  published_at?: string;
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
+  content: string;
+  excerpt?: string | null;
+  slug: string;
+  featured_image?: string | null;
+  published_at?: string | null;
 }
 
 // Fetch articles from Supabase
@@ -203,6 +202,11 @@ export const saveArticle = async (articleData: Partial<Article>, isNew: boolean)
     if (user) {
       articleData.author_id = user.id;
     }
+  }
+
+  // Ensure required fields are present for new articles
+  if (isNew && (!articleData.title || !articleData.content || !articleData.slug)) {
+    throw new Error('Title, content, and slug are required for new articles');
   }
 
   try {

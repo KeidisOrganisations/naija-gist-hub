@@ -1,12 +1,11 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { 
   Article, 
   fetchArticles, 
-  fetchCategories, 
-  deleteArticle, 
+  fetchCategories,
+  deleteArticle,
   deleteMultipleArticles,
   updateArticleStatus 
 } from '@/services/articles';
@@ -106,8 +105,8 @@ export function useArticles() {
     }
   });
 
-  // Filter articles based on search and filters
-  const filteredArticles = articles.filter((article: Article) => {
+  // Filter articles based on search and filters - with proper type handling
+  const filteredArticles = (articles as Article[]).filter((article) => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = selectedStatus === 'All' || article.status === selectedStatus.toLowerCase();
     const matchesCategory = selectedCategory === 'All' || 

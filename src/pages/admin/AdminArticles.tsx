@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
@@ -104,7 +103,7 @@ const AdminArticles = () => {
           {/* Articles Table */}
           <div className="rounded-md border bg-white">
             <ArticlesTable 
-              articles={paginatedArticles}
+              articles={paginatedArticles as Article[]}
               isLoading={isLoading}
               selectedArticles={selectedArticles}
               onSelectAll={handleSelectAll}
