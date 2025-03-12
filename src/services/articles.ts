@@ -198,47 +198,65 @@ export const fetchArticleById = async (id: string) => {
 
 // Create or update an article
 export const saveArticle = async (articleData: Partial<Article> & { title: string; content: string; slug: string }, isNew: boolean) => {
+  console.log('========= SAVE ARTICLE FUNCTION =========');
+  console.log('isNew:', isNew);
+  console.log('Article data received:', JSON.stringify(articleData, null, 2));
+  
   // Get current user ID for author_id if not provided
   if (!articleData.author_id) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       articleData.author_id = user.id;
+      console.log('Set author_id from current user:', articleData.author_id);
     }
   }
 
   // Ensure category_id is not undefined - if it is, set it to null
-  // This prevents the "invalid input syntax for type uuid: undefined" error
-  if (articleData.category_id === undefined) {
+  if (articleData.category_id === undefined || articleData.category_id === '') {
     articleData.category_id = null;
+    console.log('Set category_id to null because it was undefined or empty');
   }
 
   try {
-    console.log('Saving article with isNew:', isNew, 'article data:', articleData);
-    
     if (isNew) {
       // For new articles, we should use insert and NEVER include the ID
+      console.log('Creating new article (INSERT)');
+      
+      // Create a clean object without the ID property
+      const newArticleData = {
+        title: articleData.title,
+        content: articleData.content,
+        slug: articleData.slug,
+        status: articleData.status || 'draft',
+        category_id: articleData.category_id,
+        author_id: articleData.author_id,
+        featured_image: articleData.featured_image,
+        excerpt: articleData.excerpt,
+        published_at: articleData.published_at
+      };
+      
+      console.log('Clean insert data:', JSON.stringify(newArticleData, null, 2));
+      
       const { data, error } = await supabase
         .from('articles')
-        .insert([{
-          title: articleData.title,
-          content: articleData.content,
-          slug: articleData.slug,
-          status: articleData.status || 'draft',
-          category_id: articleData.category_id,
-          author_id: articleData.author_id,
-          featured_image: articleData.featured_image,
-          excerpt: articleData.excerpt,
-          published_at: articleData.published_at
-        }])
+        .insert([newArticleData])
         .select();
         
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase INSERT error:', error);
+        throw error;
+      }
+      
+      console.log('Insert successful, returned data:', data);
       return data[0];
     } else {
       // For existing articles, we need the ID and use update
       if (!articleData.id) {
+        console.error('Article ID missing for update operation');
         throw new Error('Article ID is required for updates');
       }
+      
+      console.log('Updating existing article (UPDATE) with ID:', articleData.id);
       
       const { data, error } = await supabase
         .from('articles')
@@ -246,7 +264,12 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
         .eq('id', articleData.id)
         .select();
         
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase UPDATE error:', error);
+        throw error;
+      }
+      
+      console.log('Update successful, returned data:', data);
       return data[0];
     }
   } catch (error: any) {

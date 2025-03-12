@@ -30,7 +30,10 @@ const AdminArticleEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  
+  console.log('AdminArticleEditor rendered with id param:', id);
   const isNew = id === 'new';
+  console.log('isNew determined as:', isNew);
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -60,6 +63,7 @@ const AdminArticleEditor = () => {
   
   useEffect(() => {
     if (article) {
+      console.log('Article loaded:', article);
       setTitle(article.title || '');
       setContent(article.content || '');
       setExcerpt(article.excerpt || '');
@@ -80,10 +84,13 @@ const AdminArticleEditor = () => {
   
   const saveMutation = useMutation({
     mutationFn: async (articleData: Partial<Article> & { title: string; content: string; slug: string }) => {
-      console.log('Saving article with data:', articleData, 'isNew:', isNew);
+      console.log('==== SAVE MUTATION ====');
+      console.log('Saving article with data:', JSON.stringify(articleData, null, 2));
+      console.log('isNew flag:', isNew);
       return saveArticle(articleData, isNew);
     },
     onSuccess: (data) => {
+      console.log('Save successful, returned data:', data);
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       queryClient.invalidateQueries({ queryKey: ['article', id] });
       
@@ -98,6 +105,7 @@ const AdminArticleEditor = () => {
       }
     },
     onError: (error: any) => {
+      console.error('Save mutation error:', error);
       toast({
         title: "Error",
         description: `Failed to save article: ${error.message}`,
@@ -141,6 +149,10 @@ const AdminArticleEditor = () => {
   });
   
   const handleSave = (publishAfter = false) => {
+    console.log('==== HANDLE SAVE ====');
+    console.log('publishAfter:', publishAfter);
+    console.log('Current state - title:', title, 'content length:', content?.length, 'slug:', slug, 'categoryId:', categoryId);
+    
     if (!title || !content || !slug) {
       toast({
         title: "Validation Error",
@@ -176,10 +188,13 @@ const AdminArticleEditor = () => {
     }
     
     if (!isNew && article?.id) {
+      console.log('Adding ID to articleData for UPDATE operation:', article.id);
       articleData.id = article.id;
+    } else {
+      console.log('Not adding ID to articleData for INSERT operation');
     }
     
-    console.log('Handling save with data:', articleData, 'isNew:', isNew);
+    console.log('Final articleData being passed to mutation:', JSON.stringify(articleData, null, 2));
     saveMutation.mutate(articleData);
   };
 
@@ -490,4 +505,3 @@ const AdminArticleEditor = () => {
 };
 
 export default AdminArticleEditor;
-
