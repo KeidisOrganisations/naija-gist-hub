@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save, Upload, Eye } from 'lucide-react';
-import { fetchCategories, fetchArticleById, saveArticle } from '@/services/articles';
+import { fetchCategories, fetchArticleById, saveArticle, Article } from '@/services/articles';
 import { fetchMediaItems, uploadMediaFile } from '@/services/media';
 import {
   Dialog,
@@ -86,7 +86,8 @@ const AdminArticleEditor = () => {
   
   // Save article mutation
   const saveMutation = useMutation({
-    mutationFn: async (articleData: any) => {
+    mutationFn: async (articleData: Partial<Article>) => {
+      console.log('Saving article with data:', articleData);
       return saveArticle(articleData, isNew);
     },
     onSuccess: (data) => {
@@ -115,16 +116,27 @@ const AdminArticleEditor = () => {
   
   // Upload media mutation
   const uploadMediaMutation = useMutation({
-    mutationFn: (file: File) => uploadMediaFile(file),
-    onSuccess: () => {
+    mutationFn: (file: File) => {
+      console.log('Uploading file:', file.name);
+      return uploadMediaFile(file);
+    },
+    onSuccess: (data) => {
+      console.log('Upload successful:', data);
       refetchMedia();
       toast({
         title: "Media uploaded",
         description: "Your file has been uploaded successfully.",
         duration: 3000,
       });
+      
+      // If it's an image, automatically use it as featured image
+      if (data && data.file_type.startsWith('image/')) {
+        setFeaturedImage(data.file_path);
+        setIsMediaLibraryOpen(false);
+      }
     },
     onError: (error: any) => {
+      console.error('Upload failed:', error);
       toast({
         title: "Upload failed",
         description: `Failed to upload media: ${error.message}`,
@@ -148,7 +160,7 @@ const AdminArticleEditor = () => {
       return;
     }
     
-    const articleData = {
+    const articleData: Partial<Article> = {
       title,
       content,
       excerpt,
@@ -156,9 +168,17 @@ const AdminArticleEditor = () => {
       status: publishAfter ? 'published' : status,
       category_id: categoryId,
       featured_image: featuredImage,
-      published_at: publishAfter && !article?.published_at ? new Date().toISOString() : article?.published_at
     };
     
+    if (publishAfter && !article?.published_at) {
+      articleData.published_at = new Date().toISOString();
+    }
+    
+    if (!isNew && article?.id) {
+      articleData.id = article.id;
+    }
+    
+    console.log('Handling save with data:', articleData);
     saveMutation.mutate(articleData);
   };
 
@@ -170,6 +190,7 @@ const AdminArticleEditor = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log('File selected for upload:', file.name);
       setIsUploadingMedia(true);
       uploadMediaMutation.mutate(file);
     }
@@ -292,6 +313,7 @@ const AdminArticleEditor = () => {
                         <SelectContent>
                           <SelectItem value="draft">Draft</SelectItem>
                           <SelectItem value="published">Published</SelectItem>
+                          <SelectItem value="pending">Pending Review</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -305,11 +327,15 @@ const AdminArticleEditor = () => {
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
+                          {categories.length === 0 ? (
+                            <SelectItem value="" disabled>No categories found</SelectItem>
+                          ) : (
+                            categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -325,6 +351,9 @@ const AdminArticleEditor = () => {
                         placeholder="article-url-slug"
                         className="mt-1"
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Used in the URL: /article/{slug || 'your-article-slug'}
+                      </p>
                     </div>
                     
                     <div>
@@ -394,16 +423,29 @@ const AdminArticleEditor = () => {
                           {imageMediaItems.length === 0 ? (
                             <div className="py-8 text-center">
                               <p>No images found in the media library.</p>
-                              <Button 
-                                variant="outline" 
-                                className="mt-4"
-                                onClick={() => {
-                                  setIsMediaLibraryOpen(false);
-                                  navigate('/admin/media');
-                                }}
-                              >
-                                Go to Media Library
-                              </Button>
+                              <div className="mt-4 flex justify-center">
+                                <Button 
+                                  variant="outline" 
+                                  className="mr-2"
+                                  onClick={() => {
+                                    setIsMediaLibraryOpen(false);
+                                    setTimeout(() => {
+                                      document.getElementById('file-upload')?.click();
+                                    }, 300);
+                                  }}
+                                >
+                                  Upload New Image
+                                </Button>
+                                <Button 
+                                  variant="outline"
+                                  onClick={() => {
+                                    setIsMediaLibraryOpen(false);
+                                    navigate('/admin/media');
+                                  }}
+                                >
+                                  Go to Media Library
+                                </Button>
+                              </div>
                             </div>
                           ) : (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">

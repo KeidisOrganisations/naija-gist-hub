@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -16,6 +17,11 @@ export interface Article {
     first_name: string;
     last_name: string;
   };
+  content?: string;
+  excerpt?: string;
+  slug?: string;
+  featured_image?: string;
+  published_at?: string;
 }
 
 // Fetch articles from Supabase
@@ -24,7 +30,8 @@ export const fetchArticles = async () => {
     .from('articles')
     .select(`
       *,
-      category:categories(name)
+      category:categories(name),
+      author:profiles(first_name, last_name)
     `)
     .order('created_at', { ascending: false });
 
@@ -189,23 +196,56 @@ export const fetchArticleById = async (id: string) => {
 };
 
 // Create or update an article
-export const saveArticle = async (articleData: any, isNew: boolean) => {
-  if (isNew) {
-    const { data, error } = await supabase
-      .from('articles')
-      .insert([articleData])
-      .select();
-      
-    if (error) throw error;
-    return data[0];
-  } else {
-    const { data, error } = await supabase
-      .from('articles')
-      .update(articleData)
-      .eq('id', articleData.id)
-      .select();
-      
-    if (error) throw error;
-    return data[0];
+export const saveArticle = async (articleData: Partial<Article>, isNew: boolean) => {
+  // Get current user ID for author_id if not provided
+  if (!articleData.author_id) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      articleData.author_id = user.id;
+    }
   }
+
+  try {
+    if (isNew) {
+      const { data, error } = await supabase
+        .from('articles')
+        .insert([articleData])
+        .select();
+        
+      if (error) throw error;
+      return data[0];
+    } else {
+      const { data, error } = await supabase
+        .from('articles')
+        .update(articleData)
+        .eq('id', articleData.id)
+        .select();
+        
+      if (error) throw error;
+      return data[0];
+    }
+  } catch (error: any) {
+    console.error('Error saving article:', error);
+    toast({
+      title: "Error saving article",
+      description: error.message || "An unknown error occurred",
+      variant: "destructive",
+      duration: 5000,
+    });
+    throw error;
+  }
+};
+
+// Create a new category
+export const createCategory = async (categoryData: { name: string; slug: string; description?: string }) => {
+  const { data, error } = await supabase
+    .from('categories')
+    .insert([categoryData])
+    .select();
+    
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data[0];
 };
