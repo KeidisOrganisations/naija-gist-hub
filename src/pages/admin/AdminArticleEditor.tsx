@@ -141,10 +141,20 @@ const AdminArticleEditor = () => {
   });
   
   const handleSave = (publishAfter = false) => {
-    if (!title || !content || !slug || !categoryId) {
+    if (!title || !content || !slug) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields: title, content, and slug.",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    if (!categoryId) {
+      toast({
+        title: "Category Required",
+        description: "Please select a category for this article.",
         variant: "destructive",
         duration: 3000,
       });

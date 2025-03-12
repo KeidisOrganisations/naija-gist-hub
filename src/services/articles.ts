@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -205,6 +206,12 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
     }
   }
 
+  // Ensure category_id is not undefined - if it is, set it to null
+  // This prevents the "invalid input syntax for type uuid: undefined" error
+  if (articleData.category_id === undefined) {
+    articleData.category_id = null;
+  }
+
   try {
     if (isNew) {
       const { data, error } = await supabase
@@ -215,6 +222,11 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
       if (error) throw error;
       return data[0];
     } else {
+      // Ensure id is not undefined for updates
+      if (!articleData.id) {
+        throw new Error('Article ID is required for updates');
+      }
+      
       const { data, error } = await supabase
         .from('articles')
         .update(articleData)
