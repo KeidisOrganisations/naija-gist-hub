@@ -8,6 +8,7 @@ import ArticleBulkActions from '@/components/admin/articles/ArticleBulkActions';
 import ArticlesTable from '@/components/admin/articles/ArticlesTable';
 import ArticlesPagination from '@/components/admin/articles/ArticlesPagination';
 import { useArticles } from '@/hooks/useArticles';
+import type { Article } from '@/services/articles';
 
 const AdminArticles = () => {
   const navigate = useNavigate();
@@ -103,7 +104,7 @@ const AdminArticles = () => {
           {/* Articles Table */}
           <div className="rounded-md border bg-white">
             <ArticlesTable 
-              articles={paginatedArticles as Article[]}
+              articles={paginatedArticles as unknown as Article[]}
               isLoading={isLoading}
               selectedArticles={selectedArticles}
               onSelectAll={handleSelectAll}

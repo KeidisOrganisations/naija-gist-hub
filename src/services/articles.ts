@@ -21,6 +21,7 @@ export interface Article {
   slug: string;
   featured_image?: string | null;
   published_at?: string | null;
+  updated_at: string;
 }
 
 // Fetch articles from Supabase
@@ -195,18 +196,13 @@ export const fetchArticleById = async (id: string) => {
 };
 
 // Create or update an article
-export const saveArticle = async (articleData: Partial<Article>, isNew: boolean) => {
+export const saveArticle = async (articleData: Partial<Article> & { title: string; content: string; slug: string }, isNew: boolean) => {
   // Get current user ID for author_id if not provided
   if (!articleData.author_id) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       articleData.author_id = user.id;
     }
-  }
-
-  // Ensure required fields are present for new articles
-  if (isNew && (!articleData.title || !articleData.content || !articleData.slug)) {
-    throw new Error('Title, content, and slug are required for new articles');
   }
 
   try {

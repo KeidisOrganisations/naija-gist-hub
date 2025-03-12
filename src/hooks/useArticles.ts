@@ -105,8 +105,8 @@ export function useArticles() {
     }
   });
 
-  // Filter articles based on search and filters - with proper type handling
-  const filteredArticles = (articles as Article[]).filter((article) => {
+  // Filter articles based on search and filters
+  const filteredArticles = ((articles || []) as unknown as Article[]).filter((article) => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = selectedStatus === 'All' || article.status === selectedStatus.toLowerCase();
     const matchesCategory = selectedCategory === 'All' || 
