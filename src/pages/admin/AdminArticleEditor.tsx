@@ -42,9 +42,10 @@ const AdminArticleEditor = () => {
   const [status, setStatus] = useState('draft');
   const [categoryId, setCategoryId] = useState('');
   const [featuredImage, setFeaturedImage] = useState('');
+  const [articleId, setArticleId] = useState<string | null>(null);
+  
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
-  const [articleId, setArticleId] = useState<string | null>(null);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -88,7 +89,7 @@ const AdminArticleEditor = () => {
   const saveMutation = useMutation({
     mutationFn: async (articleData: Partial<Article> & { title: string; content: string; slug: string }) => {
       console.log('==== SAVE MUTATION ====');
-      console.log('Saving article with data:', JSON.stringify(articleData, null, 2));
+      console.log('Article data to save:', JSON.stringify(articleData, null, 2));
       console.log('isNew flag:', isNew);
       return saveArticle(articleData, isNew);
     },
@@ -154,7 +155,7 @@ const AdminArticleEditor = () => {
   const handleSave = (publishAfter = false) => {
     console.log('==== HANDLE SAVE ====');
     console.log('publishAfter:', publishAfter);
-    console.log('Current state - title:', title, 'content length:', content?.length, 'slug:', slug, 'categoryId:', categoryId);
+    console.log('Current state - title:', title, 'content length:', content?.length, 'slug:', slug);
     console.log('Current articleId:', articleId);
     
     if (!title || !content || !slug) {
@@ -329,7 +330,7 @@ const AdminArticleEditor = () => {
                     
                     <div>
                       <Label htmlFor="category" className="text-sm font-medium">
-                        Category *
+                        Category
                       </Label>
                       <Select value={categoryId} onValueChange={setCategoryId}>
                         <SelectTrigger id="category" className="mt-1">

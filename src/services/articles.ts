@@ -173,6 +173,7 @@ export const updateArticleStatus = async ({ ids, status }: { ids: string[], stat
 
 // Fetch a single article by ID
 export const fetchArticleById = async (id: string) => {
+  console.log('Fetching article by ID:', id);
   const { data, error } = await supabase
     .from('articles')
     .select(`
@@ -184,8 +185,11 @@ export const fetchArticleById = async (id: string) => {
     .single();
     
   if (error) {
+    console.error('Error fetching article:', error);
     throw new Error(error.message);
   }
+  
+  console.log('Article fetched successfully:', data);
   
   // Increment view count
   await supabase
@@ -198,9 +202,9 @@ export const fetchArticleById = async (id: string) => {
 
 // Create or update an article
 export const saveArticle = async (articleData: Partial<Article> & { title: string; content: string; slug: string }, isNew: boolean) => {
-  console.log('========= SAVE ARTICLE FUNCTION =========');
-  console.log('isNew flag received:', isNew);
-  console.log('Article data received:', JSON.stringify(articleData, null, 2));
+  console.log('======== SAVE ARTICLE FUNCTION ========');
+  console.log('isNew flag:', isNew);
+  console.log('Article data:', JSON.stringify(articleData, null, 2));
   
   try {
     // Get current user ID for author_id if not provided
@@ -208,20 +212,18 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         articleData.author_id = user.id;
-        console.log('Set author_id from current user:', articleData.author_id);
       }
     }
 
     // Handle empty category_id
     if (articleData.category_id === undefined || articleData.category_id === '') {
       articleData.category_id = null;
-      console.log('Set category_id to null because it was undefined or empty');
     }
 
     if (isNew) {
-      console.log('Creating new article - INSERT operation');
+      console.log('Creating new article (INSERT operation)');
       
-      // For new articles, create a new clean object without ID
+      // For new articles, create a new object without ID
       const newArticleData = {
         title: articleData.title,
         content: articleData.content,
@@ -234,7 +236,7 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
         published_at: articleData.published_at
       };
       
-      console.log('Clean data for INSERT:', JSON.stringify(newArticleData, null, 2));
+      console.log('INSERT data:', JSON.stringify(newArticleData, null, 2));
       
       const { data, error } = await supabase
         .from('articles')
@@ -242,40 +244,41 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
         .select();
         
       if (error) {
-        console.error('Error during INSERT operation:', error);
+        console.error('Error during INSERT:', error);
         throw error;
       }
       
-      console.log('Insert successful, returned data:', data);
+      console.log('INSERT successful, returned data:', data);
       if (data && data.length > 0) {
         return data[0];
       } else {
         throw new Error('No data returned from insert operation');
       }
     } else {
-      // For existing articles, we need the ID and use update
+      // For updates, we need the ID
       if (!articleData.id) {
         console.error('Article ID missing for update operation');
         throw new Error('Article ID is required for updates');
       }
       
-      console.log('Updating existing article - UPDATE operation with ID:', articleData.id);
+      console.log('Updating article with ID:', articleData.id);
       
-      // Create a copy of the article data that we can safely modify
+      // Make sure we have a valid ID before proceeding
+      const articleId = articleData.id;
       const updateData = { ...articleData };
       
       const { data, error } = await supabase
         .from('articles')
         .update(updateData)
-        .eq('id', updateData.id)
+        .eq('id', articleId)
         .select();
         
       if (error) {
-        console.error('Error during UPDATE operation:', error);
+        console.error('Error during UPDATE:', error);
         throw error;
       }
       
-      console.log('Update successful, returned data:', data);
+      console.log('UPDATE successful, returned data:', data);
       if (data && data.length > 0) {
         return data[0];
       } else {
