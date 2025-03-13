@@ -29,13 +29,16 @@ export function useArticleEditor() {
   
   // Fetch article if editing
   const { 
-    data: fetchedArticle, 
+    data: fetchedArticleData, 
     isLoading: isArticleLoading 
   } = useQuery({
     queryKey: ['article', id],
     queryFn: () => (isNew ? null : fetchArticleById(id as string)),
     enabled: !isNew
   });
+  
+  // We need to safely type the fetched article
+  const fetchedArticle = fetchedArticleData as unknown as Article | null;
   
   // Fetch categories
   const { 

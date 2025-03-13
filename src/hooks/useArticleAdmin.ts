@@ -23,7 +23,7 @@ export function useArticleAdmin() {
 
   // Fetch articles
   const {
-    data: articles = [],
+    data: articlesData = [],
     isLoading,
     isError,
     error,
@@ -32,6 +32,9 @@ export function useArticleAdmin() {
     queryKey: ['admin-articles'],
     queryFn: fetchArticles
   });
+
+  // Convert the data to ensure it matches the Article type
+  const articles = articlesData as unknown as Article[];
 
   // Delete article mutation
   const deleteMutation = useMutation({
@@ -62,7 +65,7 @@ export function useArticleAdmin() {
   });
 
   // Filter articles based on search, status, and category
-  const filteredArticles = (articles as Article[]).filter((article) => {
+  const filteredArticles = articles.filter((article) => {
     const matchesSearch = 
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (article.excerpt || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -126,7 +129,7 @@ export function useArticleAdmin() {
 
   // Extract unique categories from articles
   const categories = Array.from(
-    new Set((articles as Article[]).map((article) => article.category?.name).filter(Boolean))
+    new Set(articles.map((article) => article.category?.name).filter(Boolean))
   ).map(name => ({ name }));
 
   return {
