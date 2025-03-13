@@ -261,10 +261,13 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
       
       console.log('Updating existing article - UPDATE operation with ID:', articleData.id);
       
+      // Create a copy of the article data that we can safely modify
+      const updateData = { ...articleData };
+      
       const { data, error } = await supabase
         .from('articles')
-        .update(articleData)
-        .eq('id', articleData.id)
+        .update(updateData)
+        .eq('id', updateData.id)
         .select();
         
       if (error) {

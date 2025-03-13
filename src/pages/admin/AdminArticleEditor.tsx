@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -32,9 +31,8 @@ const AdminArticleEditor = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
-  console.log('AdminArticleEditor rendered with id param:', id);
-  // Ensure isNew is determined by string value, not truthiness
   const isNew = id === 'new';
+  console.log('AdminArticleEditor rendered with id param:', id);
   console.log('isNew determined as:', isNew);
   
   const [title, setTitle] = useState('');
@@ -46,6 +44,7 @@ const AdminArticleEditor = () => {
   const [featuredImage, setFeaturedImage] = useState('');
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [articleId, setArticleId] = useState<string | null>(null);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -73,6 +72,8 @@ const AdminArticleEditor = () => {
       setStatus(article.status || 'draft');
       setCategoryId(article.category_id || '');
       setFeaturedImage(article.featured_image || '');
+      setArticleId(article.id);
+      console.log('Setting articleId state to:', article.id);
     }
   }, [article]);
   
@@ -154,6 +155,7 @@ const AdminArticleEditor = () => {
     console.log('==== HANDLE SAVE ====');
     console.log('publishAfter:', publishAfter);
     console.log('Current state - title:', title, 'content length:', content?.length, 'slug:', slug, 'categoryId:', categoryId);
+    console.log('Current articleId:', articleId);
     
     if (!title || !content || !slug) {
       toast({
@@ -164,17 +166,6 @@ const AdminArticleEditor = () => {
       });
       return;
     }
-    
-    // Don't require category for saving
-    // if (!categoryId) {
-    //   toast({
-    //     title: "Category Required",
-    //     description: "Please select a category for this article.",
-    //     variant: "destructive",
-    //     duration: 3000,
-    //   });
-    //   return;
-    // }
     
     const articleData: Partial<Article> & { title: string; content: string; slug: string } = {
       title,
@@ -190,9 +181,9 @@ const AdminArticleEditor = () => {
       articleData.published_at = new Date().toISOString();
     }
     
-    if (!isNew && article?.id) {
-      console.log('Adding ID to articleData for UPDATE operation:', article.id);
-      articleData.id = article.id;
+    if (!isNew && articleId) {
+      console.log('Adding ID to articleData for UPDATE operation:', articleId);
+      articleData.id = articleId;
     } else {
       console.log('This is a NEW article - not adding ID');
     }
