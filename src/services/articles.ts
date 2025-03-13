@@ -199,30 +199,29 @@ export const fetchArticleById = async (id: string) => {
 // Create or update an article
 export const saveArticle = async (articleData: Partial<Article> & { title: string; content: string; slug: string }, isNew: boolean) => {
   console.log('========= SAVE ARTICLE FUNCTION =========');
-  console.log('isNew:', isNew);
+  console.log('isNew flag received:', isNew);
   console.log('Article data received:', JSON.stringify(articleData, null, 2));
   
-  // Get current user ID for author_id if not provided
-  if (!articleData.author_id) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      articleData.author_id = user.id;
-      console.log('Set author_id from current user:', articleData.author_id);
-    }
-  }
-
-  // Ensure category_id is not undefined - if it is, set it to null
-  if (articleData.category_id === undefined || articleData.category_id === '') {
-    articleData.category_id = null;
-    console.log('Set category_id to null because it was undefined or empty');
-  }
-
   try {
+    // Get current user ID for author_id if not provided
+    if (!articleData.author_id) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        articleData.author_id = user.id;
+        console.log('Set author_id from current user:', articleData.author_id);
+      }
+    }
+
+    // Handle empty category_id
+    if (articleData.category_id === undefined || articleData.category_id === '') {
+      articleData.category_id = null;
+      console.log('Set category_id to null because it was undefined or empty');
+    }
+
     if (isNew) {
-      // For new articles, we should use insert and NEVER include the ID
-      console.log('Creating new article (INSERT)');
+      console.log('Creating new article - INSERT operation');
       
-      // Create a clean object without the ID property
+      // For new articles, create a new clean object without ID
       const newArticleData = {
         title: articleData.title,
         content: articleData.content,
@@ -235,7 +234,7 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
         published_at: articleData.published_at
       };
       
-      console.log('Clean insert data:', JSON.stringify(newArticleData, null, 2));
+      console.log('Clean data for INSERT:', JSON.stringify(newArticleData, null, 2));
       
       const { data, error } = await supabase
         .from('articles')
@@ -243,12 +242,16 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
         .select();
         
       if (error) {
-        console.error('Supabase INSERT error:', error);
+        console.error('Error during INSERT operation:', error);
         throw error;
       }
       
       console.log('Insert successful, returned data:', data);
-      return data[0];
+      if (data && data.length > 0) {
+        return data[0];
+      } else {
+        throw new Error('No data returned from insert operation');
+      }
     } else {
       // For existing articles, we need the ID and use update
       if (!articleData.id) {
@@ -256,7 +259,7 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
         throw new Error('Article ID is required for updates');
       }
       
-      console.log('Updating existing article (UPDATE) with ID:', articleData.id);
+      console.log('Updating existing article - UPDATE operation with ID:', articleData.id);
       
       const { data, error } = await supabase
         .from('articles')
@@ -265,12 +268,16 @@ export const saveArticle = async (articleData: Partial<Article> & { title: strin
         .select();
         
       if (error) {
-        console.error('Supabase UPDATE error:', error);
+        console.error('Error during UPDATE operation:', error);
         throw error;
       }
       
       console.log('Update successful, returned data:', data);
-      return data[0];
+      if (data && data.length > 0) {
+        return data[0];
+      } else {
+        throw new Error('No data returned from update operation');
+      }
     }
   } catch (error: any) {
     console.error('Error saving article:', error);
