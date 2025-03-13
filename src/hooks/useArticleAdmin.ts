@@ -62,7 +62,7 @@ export function useArticleAdmin() {
   });
 
   // Filter articles based on search, status, and category
-  const filteredArticles = articles.filter((article: Article) => {
+  const filteredArticles = (articles as Article[]).filter((article) => {
     const matchesSearch = 
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (article.excerpt || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -126,7 +126,7 @@ export function useArticleAdmin() {
 
   // Extract unique categories from articles
   const categories = Array.from(
-    new Set(articles.map((article: Article) => article.category?.name).filter(Boolean))
+    new Set((articles as Article[]).map((article) => article.category?.name).filter(Boolean))
   ).map(name => ({ name }));
 
   return {

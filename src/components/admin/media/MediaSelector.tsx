@@ -11,9 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Upload, Image, FileText, Film, Music, X } from 'lucide-react';
+import { Search, Upload, Image, FileText, Film, Music } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { fetchMediaItems, uploadMediaFile, MediaItem } from '@/services/media-service';
 

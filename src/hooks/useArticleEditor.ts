@@ -48,7 +48,21 @@ export function useArticleEditor() {
   // Set article data when fetched
   useEffect(() => {
     if (fetchedArticle) {
-      setArticle(fetchedArticle);
+      // Handle the fetched article, making sure it matches our expected shape
+      const articleData: Partial<Article> = {
+        id: fetchedArticle.id,
+        title: fetchedArticle.title,
+        content: fetchedArticle.content,
+        excerpt: fetchedArticle.excerpt || '',
+        slug: fetchedArticle.slug,
+        status: fetchedArticle.status || 'draft',
+        category_id: fetchedArticle.category_id || '',
+        featured_image: fetchedArticle.featured_image || '',
+        published_at: fetchedArticle.published_at,
+        author_id: fetchedArticle.author_id
+      };
+      
+      setArticle(articleData);
     }
   }, [fetchedArticle]);
   

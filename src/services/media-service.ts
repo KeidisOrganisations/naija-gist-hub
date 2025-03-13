@@ -15,9 +15,9 @@ export interface MediaItem {
 // Fetch media items
 export async function fetchMediaItems() {
   const { data, error } = await supabase
-    .from('media')
+    .from('media_items')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('uploaded_at', { ascending: false });
 
   if (error) {
     toast({
@@ -28,7 +28,18 @@ export async function fetchMediaItems() {
     throw error;
   }
   
-  return data as MediaItem[] || [];
+  // Transform the data to match our MediaItem interface
+  const mediaItems = (data || []).map(item => ({
+    id: item.id,
+    file_name: item.name,
+    file_size: item.file_size,
+    file_type: item.file_type,
+    file_path: item.file_path,
+    uploaded_by: null,
+    created_at: item.uploaded_at
+  }));
+  
+  return mediaItems as MediaItem[];
 }
 
 // Upload a media file
@@ -58,15 +69,14 @@ export async function uploadMediaFile(file: File) {
 
   // Then, add a record to the media table
   const { data, error } = await supabase
-    .from('media')
+    .from('media_items')
     .insert([{
-      file_name: file.name,
+      name: file.name,
       file_size: file.size,
       file_type: file.type,
       file_path: publicUrl,
     }])
-    .select()
-    .single();
+    .select();
 
   if (error) {
     toast({
@@ -77,14 +87,25 @@ export async function uploadMediaFile(file: File) {
     throw error;
   }
   
-  return data;
+  // Transform the data to match our MediaItem interface
+  const mediaItem = {
+    id: data[0].id,
+    file_name: data[0].name,
+    file_size: data[0].file_size,
+    file_type: data[0].file_type,
+    file_path: data[0].file_path,
+    uploaded_by: null,
+    created_at: data[0].uploaded_at
+  };
+  
+  return mediaItem;
 }
 
 // Delete a media item
 export async function deleteMediaItem(id: string) {
   // First, get the file path
   const { data: mediaItem, error: fetchError } = await supabase
-    .from('media')
+    .from('media_items')
     .select('file_path')
     .eq('id', id)
     .single();
@@ -99,13 +120,16 @@ export async function deleteMediaItem(id: string) {
   }
 
   // Extract the path from the URL
-  const path = mediaItem.file_path.split('/').pop();
-  if (path) {
+  const url = new URL(mediaItem.file_path);
+  const pathWithoutHost = url.pathname;
+  const storagePath = pathWithoutHost.split('/').slice(2).join('/'); // Remove initial /assets/ prefix
+  
+  if (storagePath) {
     // Delete from storage
     const { error: storageError } = await supabase
       .storage
       .from('assets')
-      .remove([`media/${path}`]);
+      .remove([storagePath]);
 
     if (storageError) {
       console.error("Error deleting file from storage:", storageError);
@@ -115,7 +139,7 @@ export async function deleteMediaItem(id: string) {
 
   // Delete the database record
   const { error } = await supabase
-    .from('media')
+    .from('media_items')
     .delete()
     .eq('id', id);
 
