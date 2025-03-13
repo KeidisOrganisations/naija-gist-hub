@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Trash2, Pencil, Eye } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,7 +12,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { toast } from '@/hooks/use-toast';
 
 interface ArticleBulkActionsProps {
   selectedArticles: string[];
