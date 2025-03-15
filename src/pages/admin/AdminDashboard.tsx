@@ -1,212 +1,173 @@
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AdminSidebar from '@/components/admin/AdminSidebar';
-import { 
-  BarChart3, 
-  Users, 
-  MessageSquare, 
-  TrendingUp, 
-  FileText,
-  ArrowUpRight,
-  Eye,
-  ThumbsUp
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
+import AdminLayout from '@/components/admin/AdminLayout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Loader2 } from 'lucide-react';
+import SampleDataButton from '@/components/admin/SampleDataButton';
 
 const AdminDashboard = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Check if user is authenticated for demo purposes
-    const auth = localStorage.getItem('naijaHubAdminAuth');
-    if (auth !== 'true') {
-      toast({
-        title: "Authentication required",
-        description: "Please login to access the admin area",
-        variant: "destructive",
-        duration: 3000,
-      });
-      navigate('/admin/login');
-    } else {
-      setIsAuthenticated(true);
+  // Fetch dashboard statistics
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const [articlesResult, categoriesResult, commentsResult, viewsResult] = await Promise.all([
+        supabase.from('articles').select('id', { count: 'exact' }),
+        supabase.from('categories').select('id', { count: 'exact' }),
+        supabase.from('comments').select('id', { count: 'exact' }),
+        supabase.from('articles').select('view_count').then(res => {
+          if (res.error) throw res.error;
+          return res.data.reduce((sum, article) => sum + (article.view_count || 0), 0);
+        })
+      ]);
+      
+      return {
+        articlesCount: articlesResult.count || 0,
+        categoriesCount: categoriesResult.count || 0,
+        commentsCount: commentsResult.count || 0,
+        totalViews: viewsResult
+      };
     }
-  }, [navigate]);
+  });
 
-  const handleLogout = () => {
-    localStorage.removeItem('naijaHubAdminAuth');
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
-      duration: 3000,
-    });
-    navigate('/admin/login');
-  };
-
-  if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
-  }
+  // Fetch top articles by views
+  const { data: topArticles, isLoading: isLoadingTopArticles } = useQuery({
+    queryKey: ['top-articles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('title, view_count, slug')
+        .order('view_count', { ascending: false })
+        .limit(5);
+        
+      if (error) throw error;
+      return data;
+    }
+  });
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <AdminSidebar />
-      
-      <div className="flex-1 overflow-auto">
-        {/* Admin Header */}
-        <header className="sticky top-0 z-10 flex h-16 items-center bg-white px-6 shadow-sm">
-          <div className="flex flex-1 items-center justify-between">
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Welcome, Admin</span>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                Logout
-              </Button>
-            </div>
+    <AdminLayout 
+      title="Dashboard" 
+      action={<SampleDataButton />}
+    >
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-naija-green" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-medium">Total Articles</CardTitle>
+                <CardDescription>Published and draft articles</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{stats?.articlesCount || 0}</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-medium">Categories</CardTitle>
+                <CardDescription>Content organization</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{stats?.categoriesCount || 0}</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-medium">Comments</CardTitle>
+                <CardDescription>User engagement</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{stats?.commentsCount || 0}</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-medium">Total Views</CardTitle>
+                <CardDescription>Article impressions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{stats?.totalViews || 0}</p>
+              </CardContent>
+            </Card>
           </div>
-        </header>
-        
-        <main className="p-6">
-          {/* Stats Overview */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Total Visitors</p>
-                  <h3 className="text-2xl font-bold">24,328</h3>
-                </div>
-                <div className="rounded-full bg-blue-50 p-3 text-blue-600">
-                  <Users className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center text-xs text-green-600">
-                <ArrowUpRight className="mr-1 h-3 w-3" />
-                <span>12% increase</span>
-              </div>
-            </div>
-            
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Page Views</p>
-                  <h3 className="text-2xl font-bold">78,623</h3>
-                </div>
-                <div className="rounded-full bg-purple-50 p-3 text-purple-600">
-                  <Eye className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center text-xs text-green-600">
-                <ArrowUpRight className="mr-1 h-3 w-3" />
-                <span>18% increase</span>
-              </div>
-            </div>
-            
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Articles</p>
-                  <h3 className="text-2xl font-bold">342</h3>
-                </div>
-                <div className="rounded-full bg-green-50 p-3 text-green-600">
-                  <FileText className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center text-xs text-green-600">
-                <ArrowUpRight className="mr-1 h-3 w-3" />
-                <span>5 new today</span>
-              </div>
-            </div>
-            
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Comments</p>
-                  <h3 className="text-2xl font-bold">1,283</h3>
-                </div>
-                <div className="rounded-full bg-orange-50 p-3 text-orange-600">
-                  <MessageSquare className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center text-xs text-green-600">
-                <ArrowUpRight className="mr-1 h-3 w-3" />
-                <span>24 new today</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activity Section */}
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Top Performing Articles</h3>
-                <Button variant="outline" size="sm">View All</Button>
-              </div>
-              <div className="space-y-4">
-                {[
-                  { title: "How to Make Money with AI Tools in Nigeria", views: 12453, category: "Tech" },
-                  { title: "Top 5 Apps Every Nigerian Student Should Have", views: 8932, category: "Tech" },
-                  { title: "Getting Your International Passport Without Stress", views: 7845, category: "Life" },
-                  { title: "How to Open a Dollar Account in Nigeria", views: 6234, category: "Money" },
-                  { title: "Dating in Lagos: Finding Genuine Connections", views: 5421, category: "Relationships" }
-                ].map((article, i) => (
-                  <div key={i} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
-                    <div>
-                      <p className="font-medium">{article.title}</p>
-                      <span className="text-xs text-gray-500">{article.category}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Eye className="mr-1 h-3 w-3 text-gray-500" />
-                      <span>{article.views.toLocaleString()}</span>
-                    </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Top Performing Articles</CardTitle>
+                <CardDescription>Articles with most views</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingTopArticles ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-naija-green" />
                   </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Recent Comments</h3>
-                <Button variant="outline" size="sm">View All</Button>
-              </div>
-              <div className="space-y-4">
-                {[
-                  { user: "Emeka Johnson", comment: "This article is very helpful! I've been looking for ways to make money with AI...", article: "How to Make Money with AI", time: "2 hours ago" },
-                  { user: "Blessing Okafor", comment: "I've been using ChatGPT for my freelance writing and it has really increased my productivity...", article: "Top AI Tools for Writers", time: "5 hours ago" },
-                  { user: "Tunde Adewale", comment: "Thanks for this guide! Just opened my dollar account yesterday following these steps...", article: "Dollar Account Guide", time: "1 day ago" },
-                  { user: "Funke Akindele", comment: "These tips really work! I've already connected with 3 potential business partners...", article: "Networking at Events", time: "2 days ago" }
-                ].map((comment, i) => (
-                  <div key={i} className="border-b pb-3 last:border-0 last:pb-0">
-                    <div className="flex justify-between items-center">
-                      <p className="font-medium">{comment.user}</p>
-                      <span className="text-xs text-gray-500">{comment.time}</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-1">{comment.comment}</p>
-                    <p className="text-xs text-gray-500 mt-1">on: {comment.article}</p>
+                ) : topArticles && topArticles.length > 0 ? (
+                  <div className="space-y-4">
+                    {topArticles.map((article, index) => (
+                      <div key={index} className="flex justify-between items-center border-b pb-2 last:border-0">
+                        <div className="flex items-center">
+                          <span className="text-gray-500 mr-3 font-medium">{index + 1}.</span>
+                          <span className="font-medium truncate max-w-[200px] md:max-w-[300px]">
+                            {article.title}
+                          </span>
+                        </div>
+                        <span className="bg-gray-100 px-2 py-1 rounded text-sm">
+                          {article.view_count || 0} views
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    No article data available yet
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Content Overview</CardTitle>
+                <CardDescription>Distribution of articles by status</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-full">
+                    <Loader2 className="h-6 w-6 animate-spin text-naija-green" />
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { name: 'Categories', value: stats?.categoriesCount || 0 },
+                        { name: 'Articles', value: stats?.articlesCount || 0 },
+                        { name: 'Comments', value: stats?.commentsCount || 0 },
+                      ]}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#9AE19D" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
           </div>
-
-          {/* Traffic Overview */}
-          <div className="mt-8 rounded-xl border bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold">Traffic Overview</h3>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">Weekly</Button>
-                <Button variant="outline" size="sm">Monthly</Button>
-                <Button variant="outline" size="sm" className="bg-naija-lightGreen text-naija-charcoal">Yearly</Button>
-              </div>
-            </div>
-            <div className="h-64 flex items-center justify-center">
-              <BarChart3 className="h-40 w-40 text-gray-300" />
-              <p className="text-gray-500">Traffic chart visualization would appear here</p>
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
+        </>
+      )}
+    </AdminLayout>
   );
 };
 
