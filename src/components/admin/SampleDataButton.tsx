@@ -1,7 +1,6 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Database } from '@/integrations/supabase/client';
 import { addSampleData, checkSampleData } from '@/scripts/sampleArticles';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,7 +12,7 @@ const SampleDataButton = () => {
   const queryClient = useQueryClient();
   
   // Check if data already exists
-  useState(() => {
+  useEffect(() => {
     const checkData = async () => {
       const exists = await checkSampleData();
       setHasData(exists);
