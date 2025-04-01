@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
-import { initializeStorage } from "@/services/storage-service";
+import { InitializeStorageLoader } from "@/components/ui/initialize-storage-loader";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CategoryPage from "./pages/CategoryPage";
@@ -29,14 +29,18 @@ import SubmitGuide from "./pages/SubmitGuide";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 
-const queryClient = new QueryClient();
+// Create a new client with default settings
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 const AppContent = () => {
-  useEffect(() => {
-    // Initialize storage on app start
-    initializeStorage();
-  }, []);
-
   return (
     <Routes>
       <Route path="/" element={<Index />} />
@@ -76,6 +80,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AppContent />
+        <InitializeStorageLoader />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
