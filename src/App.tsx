@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { initializeStorage } from "@/services/storage-service";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CategoryPage from "./pages/CategoryPage";
@@ -29,40 +31,51 @@ import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  useEffect(() => {
+    // Initialize storage on app start
+    initializeStorage();
+  }, []);
+
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/index" element={<Navigate to="/" replace />} />
+      <Route path="/index.html" element={<Navigate to="/" replace />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/advertise" element={<Advertise />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/submit-guide" element={<SubmitGuide />} />
+      <Route path="/signup" element={<SignUp />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/category/:slug" element={<CategoryPage />} />
+      <Route path="/article/:id" element={<ArticlePage />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin/articles" element={<AdminArticleList />} />
+      <Route path="/admin/articles/new" element={<AdminArticleEditor />} />
+      <Route path="/admin/articles/edit/:id" element={<AdminArticleEditor />} />
+      <Route path="/admin/categories" element={<AdminCategories />} />
+      <Route path="/admin/media" element={<AdminMedia />} />
+      <Route path="/admin/comments" element={<AdminComments />} />
+      <Route path="/admin/notifications" element={<AdminNotifications />} />
+      <Route path="/admin/newsletter" element={<AdminNewsletter />} />
+      <Route path="/admin/settings" element={<AdminSettings />} />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/index" element={<Navigate to="/" replace />} />
-          <Route path="/index.html" element={<Navigate to="/" replace />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/advertise" element={<Advertise />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/submit-guide" element={<SubmitGuide />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/category/:slug" element={<CategoryPage />} />
-          <Route path="/article/:id" element={<ArticlePage />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/articles" element={<AdminArticleList />} />
-          <Route path="/admin/articles/new" element={<AdminArticleEditor />} />
-          <Route path="/admin/articles/edit/:id" element={<AdminArticleEditor />} />
-          <Route path="/admin/categories" element={<AdminCategories />} />
-          <Route path="/admin/media" element={<AdminMedia />} />
-          <Route path="/admin/comments" element={<AdminComments />} />
-          <Route path="/admin/notifications" element={<AdminNotifications />} />
-          <Route path="/admin/newsletter" element={<AdminNewsletter />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AppContent />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
