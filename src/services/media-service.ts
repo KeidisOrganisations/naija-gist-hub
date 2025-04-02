@@ -15,7 +15,7 @@ export interface MediaItem {
 // Fetch media items
 export async function fetchMediaItems() {
   const { data, error } = await supabase
-    .from('media_items')
+    .from('media')
     .select('*')
     .order('uploaded_at', { ascending: false });
 
@@ -69,7 +69,7 @@ export async function uploadMediaFile(file: File) {
 
   // Then, add a record to the media table
   const { data, error } = await supabase
-    .from('media_items')
+    .from('media')
     .insert([{
       name: file.name,
       file_size: file.size,
@@ -85,6 +85,10 @@ export async function uploadMediaFile(file: File) {
       variant: "destructive",
     });
     throw error;
+  }
+  
+  if (!data || data.length === 0) {
+    throw new Error("No data returned from insert operation");
   }
   
   // Transform the data to match our MediaItem interface
@@ -105,7 +109,7 @@ export async function uploadMediaFile(file: File) {
 export async function deleteMediaItem(id: string) {
   // First, get the file path
   const { data: mediaItem, error: fetchError } = await supabase
-    .from('media_items')
+    .from('media')
     .select('file_path')
     .eq('id', id)
     .single();
@@ -139,7 +143,7 @@ export async function deleteMediaItem(id: string) {
 
   // Delete the database record
   const { error } = await supabase
-    .from('media_items')
+    .from('media')
     .delete()
     .eq('id', id);
 

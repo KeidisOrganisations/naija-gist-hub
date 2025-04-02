@@ -16,7 +16,7 @@ export interface MediaItem {
 export const fetchMediaItems = async () => {
   try {
     const { data, error } = await supabase
-      .from('media_items')
+      .from('media')
       .select('*')
       .order('uploaded_at', { ascending: false });
 
@@ -37,19 +37,12 @@ export const fetchMediaItems = async () => {
   }
 };
 
-// Fetch media folders from Supabase
+// Fetch media folders from Supabase (this is a placeholder since folders table doesn't exist yet)
 export const fetchMediaFolders = async () => {
   try {
-    const { data, error } = await supabase
-      .from('media_folders')
-      .select('*')
-      .order('name');
-
-    if (error) {
-      throw new Error(error.message);
-    }
-    
-    return data || [];
+    // Since we don't have a media_folders table yet in the schema, 
+    // we'll just return an empty array
+    return [];
   } catch (error: any) {
     console.error('Error in fetchMediaFolders:', error);
     toast({
@@ -93,9 +86,9 @@ export const uploadMediaFile = async (file: File, folder_id: string | null = nul
       
     console.log('Public URL:', publicUrl);
       
-    // Insert the file info into the media_items table
+    // Insert the file info into the media table
     const { data, error: insertError } = await supabase
-      .from('media_items')
+      .from('media')
       .insert([
         {
           name: file.name,
@@ -126,7 +119,7 @@ export const deleteMediaItem = async (id: string) => {
   try {
     // Get the file path first
     const { data: mediaItem, error: fetchError } = await supabase
-      .from('media_items')
+      .from('media')
       .select('file_path')
       .eq('id', id)
       .single();
@@ -151,7 +144,7 @@ export const deleteMediaItem = async (id: string) => {
     
     // Delete from database
     const { error: deleteError } = await supabase
-      .from('media_items')
+      .from('media')
       .delete()
       .eq('id', id);
       
@@ -167,19 +160,17 @@ export const deleteMediaItem = async (id: string) => {
   }
 };
 
-// Create a new folder
+// Create a new folder (placeholder function since folders aren't implemented yet)
 export const createMediaFolder = async (name: string, parent_id: string | null = null) => {
   try {
-    const { data, error } = await supabase
-      .from('media_folders')
-      .insert([
-        { name, parent_id }
-      ])
-      .select();
-      
-    if (error) throw error;
-    
-    return data[0];
+    // Since we don't have media_folders table yet in the schema,
+    // we'll just return a mock response
+    return {
+      id: "mock-folder-id",
+      name,
+      parent_id,
+      created_at: new Date().toISOString()
+    };
   } catch (error) {
     console.error('Error creating folder:', error);
     throw error;

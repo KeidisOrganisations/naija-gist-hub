@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -42,15 +41,19 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 // Type for the comment data from Supabase
 interface Comment {
   id: string;
-  author_name: string;
-  author_email: string;
+  article_id: string;
   content: string;
   status: string;
   created_at: string;
+  updated_at: string;
+  user_id: string | null;
+  author_name: string;
+  author_email: string;
   article: {
     id: string;
     title: string;
@@ -237,8 +240,8 @@ const AdminComments = () => {
   });
 
   // Filter comments based on search and filters
-  const filteredComments = comments.filter((comment: Comment) => {
-    const matchesSearch = comment.author_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredComments = comments.filter((comment: any) => {
+    const matchesSearch = (comment.author_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                          comment.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (comment.article?.title || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = selectedStatus === 'All' || comment.status === selectedStatus.toLowerCase();
@@ -250,7 +253,7 @@ const AdminComments = () => {
     if (selectedComments.length === filteredComments.length) {
       setSelectedComments([]);
     } else {
-      setSelectedComments(filteredComments.map(comment => comment.id));
+      setSelectedComments(filteredComments.map((comment: any) => comment.id));
     }
   };
 
@@ -406,7 +409,7 @@ const AdminComments = () => {
                 {isLoading ? (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
-                      Loading comments...
+                      <LoadingSpinner text="Loading comments..." />
                     </TableCell>
                   </TableRow>
                 ) : filteredComments.length === 0 ? (
@@ -416,7 +419,7 @@ const AdminComments = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredComments.map((comment: Comment) => (
+                  filteredComments.map((comment: any) => (
                     <TableRow key={comment.id}>
                       <TableCell>
                         <Checkbox

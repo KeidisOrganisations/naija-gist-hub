@@ -14,7 +14,9 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Upload, Image, FileText, Film, Music } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { fetchMediaItems, uploadMediaFile, MediaItem } from '@/services/media-service';
+import { fetchMediaItems, uploadMediaFile } from '@/services/media-service';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import type { MediaItem } from '@/services/media-service';
 
 interface MediaSelectorProps {
   onSelect: (url: string) => void;
@@ -131,7 +133,7 @@ const MediaSelector = ({ onSelect, onClose }: MediaSelectorProps) => {
             >
               <label htmlFor="file-upload" className="cursor-pointer">
                 <Upload className="mr-2 h-4 w-4" />
-                Upload New
+                {isUploading ? "Uploading..." : "Upload New"}
               </label>
             </Button>
           </div>
@@ -161,7 +163,7 @@ const MediaSelector = ({ onSelect, onClose }: MediaSelectorProps) => {
           <div className="overflow-y-auto max-h-[400px] border rounded-md p-4">
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <p>Loading media...</p>
+                <LoadingSpinner text="Loading media..." />
               </div>
             ) : filteredMedia.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
