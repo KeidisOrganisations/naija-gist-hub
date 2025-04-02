@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -37,6 +36,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { fetchMediaItems, fetchMediaFolders, uploadMediaFile, deleteMediaItem, createMediaFolder } from '@/services/media';
+import { MediaItem } from '@/types/media';
 
 type ViewMode = 'grid' | 'list';
 type MediaType = 'all' | 'image' | 'video' | 'document';

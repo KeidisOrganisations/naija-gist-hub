@@ -1,24 +1,19 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Search,
-  CheckCircle,
-  XCircle,
+  Check,
+  X,
   Trash2,
-  MessageSquare,
-  ExternalLink,
+  EyeOff,
+  Eye,
 } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -26,300 +21,169 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogDescription,
+  DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { toast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
-// Type for the comment data from Supabase
 interface Comment {
   id: string;
-  article_id: string;
   content: string;
   status: string;
+  article_id: string;
+  user_id: string | null;
   created_at: string;
   updated_at: string;
-  user_id: string | null;
   author_name: string;
   author_email: string;
-  article: {
+  article?: {
     id: string;
     title: string;
   };
 }
 
-// Fetch comments from Supabase
-const fetchComments = async () => {
-  const { data, error } = await supabase
-    .from('comments')
-    .select(`
-      *,
-      article:articles(id, title)
-    `)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-  
-  return data || [];
-};
-
-// Update comment status
-const updateCommentStatus = async ({ id, status }: { id: string; status: string }) => {
-  const { error } = await supabase
-    .from('comments')
-    .update({ status })
-    .eq('id', id);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-  
-  return true;
-};
-
-// Delete a comment
-const deleteComment = async (id: string) => {
-  const { error } = await supabase
-    .from('comments')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-  
-  return true;
-};
-
-// Batch update comment status
-const batchUpdateStatus = async ({ ids, status }: { ids: string[]; status: string }) => {
-  const { error } = await supabase
-    .from('comments')
-    .update({ status })
-    .in('id', ids);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-  
-  return true;
-};
-
-// Batch delete comments
-const batchDeleteComments = async (ids: string[]) => {
-  const { error } = await supabase
-    .from('comments')
-    .delete()
-    .in('id', ids);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-  
-  return true;
-};
-
 const AdminComments = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('All');
-  const [selectedComments, setSelectedComments] = useState<string[]>([]);
-  const [replyTo, setReplyTo] = useState<Comment | null>(null);
-  const [replyText, setReplyText] = useState('');
-  
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Fetch comments with React Query
-  const {
-    data: comments = [],
-    isLoading,
-    isError,
-    error
-  } = useQuery({
-    queryKey: ['comments'],
+  // Fetch comments from Supabase with article titles
+  const fetchComments = async () => {
+    const { data, error } = await supabase
+      .from('comments')
+      .select(`
+        *,
+        article:articles(id, title)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as Comment[];
+  };
+
+  // Approve comment
+  const approveComment = async (id: string) => {
+    const { error } = await supabase
+      .from('comments')
+      .update({ status: 'approved' })
+      .eq('id', id);
+
+    if (error) throw error;
+    return id;
+  };
+
+  // Reject comment
+  const rejectComment = async (id: string) => {
+    const { error } = await supabase
+      .from('comments')
+      .update({ status: 'rejected' })
+      .eq('id', id);
+
+    if (error) throw error;
+    return id;
+  };
+
+  // Delete comment
+  const deleteComment = async (id: string) => {
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return id;
+  };
+
+  // Query & mutations
+  const { data: comments = [], isLoading, error } = useQuery({
+    queryKey: ['admin-comments'],
     queryFn: fetchComments
   });
 
-  // Update comment status mutation
-  const updateStatusMutation = useMutation({
-    mutationFn: updateCommentStatus,
+  const approveMutation = useMutation({
+    mutationFn: approveComment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-comments'] });
       toast({
-        title: "Comment status updated",
-        description: "The comment status has been updated successfully.",
-        duration: 3000,
+        title: 'Comment approved',
+        description: 'The comment has been published.',
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Error",
-        description: `Failed to update comment status: ${error.message}`,
-        variant: "destructive",
-        duration: 5000,
+        title: 'Error',
+        description: `Failed to approve comment: ${error.message}`,
+        variant: 'destructive',
       });
     }
   });
 
-  // Delete comment mutation
+  const rejectMutation = useMutation({
+    mutationFn: rejectComment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-comments'] });
+      toast({
+        title: 'Comment rejected',
+        description: 'The comment has been hidden.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: `Failed to reject comment: ${error.message}`,
+        variant: 'destructive',
+      });
+    }
+  });
+
   const deleteMutation = useMutation({
     mutationFn: deleteComment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-comments'] });
+      setConfirmDeleteOpen(false);
+      setSelectedComment(null);
       toast({
-        title: "Comment deleted",
-        description: "The comment has been deleted successfully.",
-        duration: 3000,
+        title: 'Comment deleted',
+        description: 'The comment has been permanently removed.',
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Error",
+        title: 'Error',
         description: `Failed to delete comment: ${error.message}`,
-        variant: "destructive",
-        duration: 5000,
+        variant: 'destructive',
       });
     }
   });
 
-  // Batch update status mutation
-  const batchUpdateMutation = useMutation({
-    mutationFn: batchUpdateStatus,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments'] });
-      toast({
-        title: "Comments approved",
-        description: `${selectedComments.length} comments have been approved.`,
-        duration: 3000,
-      });
-      setSelectedComments([]);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to approve comments: ${error.message}`,
-        variant: "destructive",
-        duration: 5000,
-      });
-    }
-  });
-
-  // Batch delete mutation
-  const batchDeleteMutation = useMutation({
-    mutationFn: batchDeleteComments,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments'] });
-      toast({
-        title: "Comments deleted",
-        description: `${selectedComments.length} comments have been deleted.`,
-        duration: 3000,
-      });
-      setSelectedComments([]);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to delete comments: ${error.message}`,
-        variant: "destructive",
-        duration: 5000,
-      });
-    }
-  });
-
-  // Filter comments based on search and filters
-  const filteredComments = comments.filter((comment: any) => {
-    const matchesSearch = (comment.author_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         comment.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (comment.article?.title || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = selectedStatus === 'All' || comment.status === selectedStatus.toLowerCase();
+  // Apply filters
+  const filteredComments = comments.filter(comment => {
+    const matchesSearch = 
+      comment.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (comment.author_name && comment.author_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (comment.author_email && comment.author_email.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const matchesStatus = statusFilter === 'all' || comment.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
 
-  const handleSelectAll = () => {
-    if (selectedComments.length === filteredComments.length) {
-      setSelectedComments([]);
-    } else {
-      setSelectedComments(filteredComments.map((comment: any) => comment.id));
-    }
+  const handleDeleteClick = (comment: Comment) => {
+    setSelectedComment(comment);
+    setConfirmDeleteOpen(true);
   };
 
-  const handleSelectComment = (id: string) => {
-    if (selectedComments.includes(id)) {
-      setSelectedComments(selectedComments.filter(commentId => commentId !== id));
-    } else {
-      setSelectedComments([...selectedComments, id]);
-    }
-  };
-
-  const handleApprove = (id: string) => {
-    updateStatusMutation.mutate({ id, status: 'approved' });
-  };
-
-  const handleApproveSelected = () => {
-    if (selectedComments.length === 0) return;
-    
-    batchUpdateMutation.mutate({
-      ids: selectedComments,
-      status: 'approved'
-    });
-  };
-
-  const handleSpam = (id: string) => {
-    updateStatusMutation.mutate({ id, status: 'spam' });
-  };
-
-  const handleDelete = (id: string) => {
-    deleteMutation.mutate(id);
-  };
-
-  const handleDeleteSelected = () => {
-    if (selectedComments.length === 0) return;
-    
-    batchDeleteMutation.mutate(selectedComments);
-  };
-
-  const handleReply = () => {
-    if (!replyText.trim()) {
-      toast({
-        title: "Reply cannot be empty",
-        description: "Please enter a reply message.",
-        variant: "destructive",
-        duration: 3000,
-      });
-      return;
-    }
-
-    // In a real implementation, you would send an email to the commenter here
-    toast({
-      title: "Reply sent",
-      description: `Your reply to ${replyTo?.author_name} has been sent.`,
-      duration: 3000,
-    });
-
-    setReplyTo(null);
-    setReplyText('');
-  };
-
-  const handleViewArticle = (articleId: string) => {
-    // Open article in a new tab
-    window.open(`/article/${articleId}`, '_blank');
-  };
-
-  if (isError) {
+  if (error) {
     return (
       <div className="flex h-screen bg-gray-50">
         <AdminSidebar />
@@ -337,29 +201,16 @@ const AdminComments = () => {
       <AdminSidebar />
       
       <div className="flex-1 overflow-auto">
-        {/* Admin Header */}
         <header className="sticky top-0 z-10 flex h-16 items-center bg-white px-6 shadow-sm">
           <div className="flex flex-1 items-center justify-between">
             <h1 className="text-2xl font-bold">Comments</h1>
-            {selectedComments.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handleApproveSelected}>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Approve Selected
-                </Button>
-                <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Selected
-                </Button>
-              </div>
-            )}
           </div>
         </header>
         
         <main className="p-6">
-          {/* Filters and Search */}
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
+              {/* Search input */}
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
@@ -371,178 +222,167 @@ const AdminComments = () => {
                 />
               </div>
               
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Status" />
+              {/* Status filter */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Status</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Spam">Spam</SelectItem>
+                  <SelectItem value="all">All Comments</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           
-          {/* Comments Table */}
-          <div className="rounded-md border bg-white">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[40px]">
-                    <Checkbox 
-                      checked={selectedComments.length === filteredComments.length && filteredComments.length > 0}
-                      onCheckedChange={handleSelectAll}
-                      aria-label="Select all comments"
-                    />
-                  </TableHead>
-                  <TableHead>Author</TableHead>
-                  <TableHead>Comment</TableHead>
-                  <TableHead>Article</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                      <LoadingSpinner text="Loading comments..." />
-                    </TableCell>
-                  </TableRow>
-                ) : filteredComments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                      No comments found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredComments.map((comment: any) => (
-                    <TableRow key={comment.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedComments.includes(comment.id)}
-                          onCheckedChange={() => handleSelectComment(comment.id)}
-                          aria-label={`Select comment by ${comment.author_name}`}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{comment.author_name}</p>
-                          <p className="text-xs text-gray-500">{comment.author_email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <p className="line-clamp-2 max-w-xs">{comment.content}</p>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <p className="truncate max-w-[150px]">{comment.article?.title || 'Unknown Article'}</p>
-                          {comment.article && (
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <LoadingSpinner text="Loading comments..." />
+            </div>
+          ) : (
+            <div className="rounded-md border bg-white">
+              {filteredComments.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-gray-500">No comments found matching your filters.</p>
+                </div>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Author
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Comment
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        On Article
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredComments.map((comment) => (
+                      <tr key={comment.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{comment.author_name || 'Anonymous'}</div>
+                          <div className="text-sm text-gray-500">{comment.author_email || 'No email'}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 line-clamp-2">{comment.content}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {comment.article?.title || 'Unknown article'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                            ${comment.status === 'approved' 
+                              ? 'bg-green-100 text-green-800' 
+                              : comment.status === 'rejected'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                            {comment.status.charAt(0).toUpperCase() + comment.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(comment.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          {comment.status === 'pending' && (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => approveMutation.mutate(comment.id)}
+                                className="text-green-600"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => rejectMutation.mutate(comment.id)}
+                                className="text-red-600"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                          {comment.status === 'approved' && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-8 w-8 p-0 ml-1"
-                              onClick={() => handleViewArticle(comment.article.id)}
+                              onClick={() => rejectMutation.mutate(comment.id)}
+                              className="text-gray-600"
                             >
-                              <ExternalLink className="h-3 w-3" />
+                              <EyeOff className="h-4 w-4" />
                             </Button>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span 
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                            ${comment.status === 'approved' ? 'bg-green-100 text-green-800' : 
-                              comment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                              'bg-red-100 text-red-800'}`
-                          }
-                        >
-                          {comment.status.charAt(0).toUpperCase() + comment.status.slice(1)}
-                        </span>
-                      </TableCell>
-                      <TableCell>{format(new Date(comment.created_at), 'yyyy-MM-dd HH:mm')}</TableCell>
-                      <TableCell className="flex justify-end gap-2">
-                        {comment.status === 'pending' && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0 text-green-600"
-                            onClick={() => handleApprove(comment.id)}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {comment.status !== 'spam' && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0 text-orange-600"
-                            onClick={() => handleSpam(comment.id)}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Dialog>
-                          <DialogTrigger asChild>
+                          {comment.status === 'rejected' && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-8 w-8 p-0 text-blue-600"
-                              onClick={() => setReplyTo(comment)}
+                              onClick={() => approveMutation.mutate(comment.id)}
+                              className="text-gray-600"
                             >
-                              <MessageSquare className="h-4 w-4" />
+                              <Eye className="h-4 w-4" />
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Reply to Comment</DialogTitle>
-                              <DialogDescription>
-                                Your reply will be sent to {replyTo?.author_name}'s email address.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="bg-gray-50 p-3 rounded-md mb-4">
-                              <p className="text-sm font-medium">{replyTo?.author_name} wrote:</p>
-                              <p className="text-sm text-gray-600 mt-1">{replyTo?.content}</p>
-                            </div>
-                            <Textarea
-                              placeholder="Type your reply here..."
-                              className="min-h-[120px]"
-                              value={replyText}
-                              onChange={(e) => setReplyText(e.target.value)}
-                            />
-                            <DialogFooter>
-                              <DialogClose asChild>
-                                <Button variant="outline" onClick={() => {
-                                  setReplyTo(null);
-                                  setReplyText('');
-                                }}>
-                                  Cancel
-                                </Button>
-                              </DialogClose>
-                              <Button onClick={handleReply}>Send Reply</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-red-600"
-                          onClick={() => handleDelete(comment.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDeleteClick(comment)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
         </main>
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this comment? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button 
+              variant="destructive" 
+              onClick={() => selectedComment && deleteMutation.mutate(selectedComment.id)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

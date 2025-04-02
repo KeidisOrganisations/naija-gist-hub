@@ -37,7 +37,7 @@ export const fetchMediaItems = async () => {
   }
 };
 
-// Fetch media folders from Supabase (this is a placeholder since folders table doesn't exist yet)
+// Fetch media folders (placeholder since media_folders doesn't exist in our schema yet)
 export const fetchMediaFolders = async () => {
   try {
     // Since we don't have a media_folders table yet in the schema, 
