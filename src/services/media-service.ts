@@ -49,7 +49,7 @@ export async function uploadMediaFile(file: File) {
   
   const { data: uploadData, error: uploadError } = await supabase
     .storage
-    .from('assets')
+    .from('media')
     .upload(filePath, file);
 
   if (uploadError) {
@@ -64,7 +64,7 @@ export async function uploadMediaFile(file: File) {
   // Get the public URL
   const { data: { publicUrl } } = supabase
     .storage
-    .from('assets')
+    .from('media')
     .getPublicUrl(filePath);
 
   // Then, add a record to the media table
@@ -126,13 +126,13 @@ export async function deleteMediaItem(id: string) {
   // Extract the path from the URL
   const url = new URL(mediaItem.file_path);
   const pathWithoutHost = url.pathname;
-  const storagePath = pathWithoutHost.split('/').slice(2).join('/'); // Remove initial /assets/ prefix
+  const storagePath = pathWithoutHost.split('/').slice(2).join('/'); // Remove initial /media/ prefix
   
   if (storagePath) {
     // Delete from storage
     const { error: storageError } = await supabase
       .storage
-      .from('assets')
+      .from('media')
       .remove([storagePath]);
 
     if (storageError) {

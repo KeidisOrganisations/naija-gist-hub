@@ -5,7 +5,7 @@ import { toast } from '@/hooks/use-toast';
 // Initialize storage bucket if it doesn't exist
 export async function initializeStorage() {
   try {
-    // Check if assets bucket exists
+    // Check if media bucket exists
     const { data: buckets, error: getBucketsError } = await supabase
       .storage
       .listBuckets();
@@ -20,20 +20,20 @@ export async function initializeStorage() {
       return false;
     }
     
-    const assetsBucketExists = buckets?.some(bucket => bucket.name === 'assets');
+    const mediaBucketExists = buckets?.some(bucket => bucket.name === 'media');
     
-    if (!assetsBucketExists) {
+    if (!mediaBucketExists) {
       try {
-        // Create assets bucket with public access
+        // Create media bucket with public access
         const { error: createBucketError } = await supabase
           .storage
-          .createBucket('assets', {
+          .createBucket('media', {
             public: true,
             fileSizeLimit: 10485760, // 10MB
           });
         
         if (createBucketError) {
-          console.error('Error creating assets bucket:', createBucketError);
+          console.error('Error creating media bucket:', createBucketError);
           toast({
             title: "Storage Setup Error",
             description: "Could not create storage bucket. Media uploads may not work.",
@@ -42,7 +42,7 @@ export async function initializeStorage() {
           return false;
         }
         
-        console.log('Assets storage bucket created successfully');
+        console.log('Media storage bucket created successfully');
         toast({
           title: "Storage Ready",
           description: "Storage system has been initialized successfully.",

@@ -139,7 +139,7 @@ export const deleteMediaItem = async (id: string) => {
       
     if (storageError) {
       console.error('Storage delete error:', storageError);
-      throw storageError;
+      // Don't throw here, still try to delete from the database
     }
     
     // Delete from database
