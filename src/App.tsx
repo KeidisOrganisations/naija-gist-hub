@@ -4,12 +4,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { HelmetProvider } from "react-helmet-async"; // Add this import
 import { InitializeStorageLoader } from "@/components/ui/initialize-storage-loader";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CategoryPage from "./pages/CategoryPage";
 import ArticlePage from "./pages/ArticlePage";
+import SearchResults from "./pages/SearchResults";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import About from "./pages/About";
@@ -54,6 +55,7 @@ const AppContent = () => {
       <Route path="/submit-guide" element={<SubmitGuide />} />
       <Route path="/signup" element={<SignUp />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/search" element={<SearchResults />} />
       <Route path="/category/:slug" element={<CategoryPage />} />
       <Route path="/article/:id" element={<ArticlePage />} />
       <Route path="/admin/login" element={<AdminLogin />} />
@@ -75,14 +77,16 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AppContent />
-        <InitializeStorageLoader />
-      </BrowserRouter>
-    </TooltipProvider>
+    <HelmetProvider> {/* Add HelmetProvider */}
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppContent />
+          <InitializeStorageLoader />
+        </BrowserRouter>
+      </TooltipProvider>
+    </HelmetProvider>
   </QueryClientProvider>
 );
 

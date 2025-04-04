@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CommentSection from '@/components/CommentSection';
 import SocialShareButtons from '@/components/SocialShareButtons';
+import SEOHead from '@/components/SEOHead'; // Add this import
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ThumbsUp, ThumbsDown, User, Calendar, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -132,16 +133,6 @@ const ArticlePage = () => {
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0);
-    
-    // Update page title with article title
-    if (article) {
-      document.title = `${article.title} | Naija Times`;
-    }
-    
-    return () => {
-      // Reset title when unmounting
-      document.title = 'Naija Times';
-    };
   }, [article]);
 
   const handleShare = () => {
@@ -182,6 +173,10 @@ const ArticlePage = () => {
   if (!article) {
     return (
       <div className="min-h-screen flex flex-col">
+        <SEOHead 
+          title="Article Not Found | Naija Times"
+          description="The article you are looking for does not exist or may have been removed."
+        />
         <Navbar />
         <main className="flex-grow flex items-center justify-center">
           <div className="text-center">
@@ -202,8 +197,22 @@ const ArticlePage = () => {
     .map(relId => articles.find(a => a.id === relId))
     .filter(Boolean);
 
+  // Extract first paragraph for meta description
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = article.content;
+  const firstParagraph = tempDiv.querySelector('p')?.textContent || '';
+  const metaDescription = firstParagraph.substring(0, 160) + (firstParagraph.length > 160 ? '...' : '');
+
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOHead 
+        title={`${article.title} | Naija Times`}
+        description={metaDescription}
+        keywords={article.tags}
+        author={article.author}
+        ogImage={article.image}
+        ogType="article"
+      />
       <Navbar />
       <main className="flex-grow bg-gray-50">
         {/* Hero Section */}

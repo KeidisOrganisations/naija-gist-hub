@@ -6,10 +6,16 @@ import TrendingSection from '@/components/TrendingSection';
 import QuoteOfTheDay from '@/components/QuoteOfTheDay';
 import NewsletterSection from '@/components/NewsletterSection';
 import Footer from '@/components/Footer';
+import SEOHead from '@/components/SEOHead'; // Add this import
 
 const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOHead 
+        title="Naija Times | Your Trusted Source for Nigerian News & Guides"
+        description="Naija Times provides the latest news, guides, and stories from Nigeria. Explore our articles on tech, business, lifestyle, and more."
+        keywords={['Nigeria', 'news', 'guides', 'tech', 'business', 'lifestyle']}
+      />
       <Navbar />
       <main className="flex-grow">
         <Hero />
