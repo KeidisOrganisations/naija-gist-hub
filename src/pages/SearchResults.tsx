@@ -1,164 +1,129 @@
 
-import { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import SearchBar from '@/components/SearchBar';
-import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-// Sample article data (in a real app, this would come from an API)
-const articles = [
-  {
-    id: "1",
-    title: "How to Start Making Money with AI Tools in Nigeria",
-    category: "tech",
-    categoryTitle: "Tech",
-    excerpt: "Looking to make extra income with the latest AI tools? You're in the right place! Artificial Intelligence is transforming how we work, and Nigerians can benefit greatly from this technology revolution.",
-    image: "https://placehold.co/1200x600/9AE19D/FFFFFF?text=AI+Tools",
-    date: "June 12, 2023",
-    author: "Chioma Okonkwo",
-    tags: ["AI", "Money", "Technology", "Freelancing"]
-  },
-  {
-    id: "2",
-    title: "Top 5 Apps Every Nigerian Student Should Have in 2023",
-    category: "tech",
-    categoryTitle: "Tech",
-    excerpt: "Being a student in Nigeria comes with its unique challenges, but these apps can make your life much easier. From Photomath to Google Drive, these tools will boost your productivity.",
-    image: "https://placehold.co/1200x600/9AE19D/FFFFFF?text=Student+Apps",
-    date: "May 28, 2023",
-    author: "Tunde Adewale",
-    tags: ["Education", "Apps", "Students", "Productivity"]
-  },
-  {
-    id: "3",
-    title: "Getting Your International Passport Without Stress in Nigeria",
-    category: "life",
-    categoryTitle: "Life",
-    excerpt: "The process of getting an international passport in Nigeria has often been described as stressful. However, with the right information and approach, it can be a smooth experience.",
-    image: "https://placehold.co/1200x600/9AE19D/FFFFFF?text=Passport+Guide",
-    date: "April 15, 2023",
-    author: "Ngozi Eze",
-    tags: ["Travel", "Documentation", "Nigeria", "Guide"]
-  }
-];
+import { SearchResult, searchArticles } from '@/services/search-service';
+import { Card, CardContent } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Link } from 'react-router-dom';
+import SEOHead from '@/components/SEOHead';
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
-  const [results, setResults] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // In a real app, this would be an API call
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      if (query) {
-        const searchResults = articles.filter(article => {
-          const matchInTitle = article.title.toLowerCase().includes(query.toLowerCase());
-          const matchInExcerpt = article.excerpt.toLowerCase().includes(query.toLowerCase());
-          const matchInTags = article.tags.some(tag => 
-            tag.toLowerCase().includes(query.toLowerCase())
-          );
-          
-          return matchInTitle || matchInExcerpt || matchInTags;
-        });
-        
-        setResults(searchResults);
-      } else {
+    const fetchResults = async () => {
+      if (!query) {
         setResults([]);
+        return;
       }
-      
-      setIsLoading(false);
-    }, 500); // Simulate loading delay
-    
-    // Update page title
-    document.title = `Search: ${query} | Naija Times`;
-    
-    return () => {
-      document.title = 'Naija Times';
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const searchResults = await searchArticles(query);
+        setResults(searchResults);
+      } catch (err: any) {
+        console.error('Search error:', err);
+        setError(err.message || 'Failed to search articles');
+      } finally {
+        setIsLoading(false);
+      }
     };
+
+    fetchResults();
   }, [query]);
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOHead 
+        title={`Search Results for "${query}" | Naija Times`}
+        description={`Search results for "${query}" on Naija Times. Find the latest news, guides, and stories.`}
+        keywords={['search', 'results', query]}
+      />
       <Navbar />
-      <main className="flex-grow bg-gray-50 py-10">
-        <div className="container px-4 mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-6 font-heading">Search Results</h1>
-            <div className="max-w-lg">
-              <SearchBar variant="expanded" placeholder="Search articles..." />
-            </div>
-            {query && (
-              <p className="mt-4 text-gray-600">
-                {isLoading 
-                  ? 'Searching...' 
-                  : `Found ${results.length} results for "${query}"`}
-              </p>
-            )}
-          </div>
+      
+      <main className="flex-grow container px-4 mx-auto py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">
+            Search Results{query ? `: "${query}"` : ''}
+          </h1>
+          <p className="text-gray-600">
+            {results.length} {results.length === 1 ? 'result' : 'results'} found
+          </p>
+        </div>
 
-          {isLoading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-naija-green" />
-            </div>
-          ) : results.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {results.map(article => (
-                <div key={article.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover-scale">
-                  <Link to={`/article/${article.id}`}>
-                    <div className="h-48 overflow-hidden">
-                      <img 
-                        src={article.image} 
-                        alt={article.title} 
-                        className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <LoadingSpinner text="Searching..." />
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        ) : results.length === 0 ? (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold mb-4">No results found</h2>
+            <p className="text-gray-600 mb-6">
+              We couldn't find any articles matching your search term.
+            </p>
+            <Button asChild className="bg-naija-green hover:bg-naija-green/90">
+              <Link to="/">Back to Home</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {results.map((result) => (
+              <Card key={result.id} className="overflow-hidden">
+                <CardContent className="p-0 flex flex-col md:flex-row">
+                  {result.featured_image && (
+                    <div className="md:w-1/4">
+                      <img
+                        src={result.featured_image}
+                        alt={result.title}
+                        className="w-full h-48 md:h-full object-cover"
                       />
                     </div>
-                  </Link>
-                  <div className="p-6">
-                    <Link 
-                      to={`/category/${article.category}`}
-                      className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mb-3"
-                    >
-                      {article.categoryTitle}
-                    </Link>
-                    <Link to={`/article/${article.id}`}>
-                      <h3 className="text-xl font-bold mb-2 line-clamp-2 hover:text-naija-green transition-colors">
-                        {article.title}
-                      </h3>
-                    </Link>
-                    <p className="text-gray-600 mb-4 line-clamp-3">
-                      {article.excerpt}
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">{article.date}</span>
-                      <Link 
-                        to={`/article/${article.id}`}
-                        className="text-naija-green font-medium hover:underline"
-                      >
-                        Read More
-                      </Link>
+                  )}
+                  <div className={`p-6 ${result.featured_image ? 'md:w-3/4' : 'w-full'}`}>
+                    <div className="mb-2">
+                      {result.category_name && (
+                        <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded mr-2">
+                          {result.category_name}
+                        </span>
+                      )}
+                      {result.published_at && (
+                        <span className="text-gray-500 text-sm">
+                          {new Date(result.published_at).toLocaleDateString()}
+                        </span>
+                      )}
                     </div>
+                    <h2 className="text-xl font-bold mb-2">
+                      <Link to={`/article/${result.id}`} className="hover:text-naija-green">
+                        {result.title}
+                      </Link>
+                    </h2>
+                    {result.excerpt && (
+                      <p className="text-gray-600 mb-4">{result.excerpt}</p>
+                    )}
+                    <Button asChild variant="outline">
+                      <Link to={`/article/${result.id}`}>Read More</Link>
+                    </Button>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-white rounded-xl shadow-sm">
-              <h2 className="text-2xl font-bold mb-4">No results found</h2>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                We couldn't find any articles matching your search query. Try using different keywords or browse our categories.
-              </p>
-              <Button asChild className="bg-naija-green hover:bg-naija-green/90 text-black">
-                <Link to="/">Back to Home</Link>
-              </Button>
-            </div>
-          )}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </main>
+      
       <Footer />
     </div>
   );

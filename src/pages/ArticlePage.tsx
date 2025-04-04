@@ -1,436 +1,206 @@
 
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import CommentSection from '@/components/CommentSection';
 import SocialShareButtons from '@/components/SocialShareButtons';
-import SEOHead from '@/components/SEOHead'; // Add this import
-import { Link } from 'react-router-dom';
-import { ChevronLeft, ThumbsUp, ThumbsDown, User, Calendar, Clock } from 'lucide-react';
+import EnhancedCommentSection from '@/components/EnhancedCommentSection';
+import { fetchArticleById } from '@/services/articles';
 import { Button } from '@/components/ui/button';
-import { toast } from "@/hooks/use-toast";
-import { useEffect } from 'react';
-
-// Sample article data (in a real app, this would come from an API)
-const articles = [
-  {
-    id: "1",
-    title: "How to Start Making Money with AI Tools in Nigeria",
-    category: "tech",
-    categoryTitle: "Tech",
-    content: `
-      <p class="mb-4">Looking to make extra income with the latest AI tools? You're in the right place!</p>
-      
-      <h2 class="text-2xl font-semibold mb-3 mt-6">Why AI is a Game-Changer for Nigerians</h2>
-      <p class="mb-4">Artificial Intelligence is transforming how we work, and Nigerians can benefit greatly from this technology revolution. With just your laptop and internet connection, you can offer services globally.</p>
-      
-      <h2 class="text-2xl font-semibold mb-3 mt-6">Top 5 AI Tools to Start Making Money</h2>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">1. Content Creation with ChatGPT</h3>
-      <p class="mb-4">Use ChatGPT to write blogs, social media posts, or even entire e-books. Many businesses are looking for content creators who can leverage AI to produce quality content faster.</p>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">2. Design with Midjourney or DALL-E</h3>
-      <p class="mb-4">Generate stunning images and designs for clients. From logo design to custom illustrations, AI image generators can help you create professional designs without traditional design skills.</p>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">3. Video Creation with Runway ML</h3>
-      <p class="mb-4">Create and edit videos using AI. This is perfect for social media managers, content creators, and digital marketers.</p>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">4. Voice Overs with ElevenLabs</h3>
-      <p class="mb-4">Generate human-like voice overs for videos, podcasts, and audiobooks. This is a growing market as content becomes more audio-visual.</p>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">5. AI Consulting</h3>
-      <p class="mb-4">Help businesses integrate AI tools into their workflow. Many Nigerian businesses want to use AI but don't know where to start.</p>
-      
-      <h2 class="text-2xl font-semibold mb-3 mt-6">How to Get Started</h2>
-      <p class="mb-4">Start by picking one AI tool and mastering it. Create samples of your work to show potential clients. Use platforms like Upwork, Fiverr, or even Instagram to market your AI-powered services.</p>
-      
-      <p class="mb-4">Remember, the key is to focus on solving real problems for businesses or individuals. AI is just the tool – your understanding of client needs is what will set you apart!</p>
-    `,
-    image: "https://placehold.co/1200x600/9AE19D/FFFFFF?text=AI+Tools",
-    date: "June 12, 2023",
-    author: "Chioma Okonkwo",
-    authorImage: "https://placehold.co/100x100/9AE19D/FFFFFF?text=CO",
-    readTime: "5 min read",
-    relatedArticles: ["2", "3", "6"],
-    tags: ["AI", "Money", "Technology", "Freelancing"]
-  },
-  {
-    id: "2",
-    title: "Top 5 Apps Every Nigerian Student Should Have in 2023",
-    category: "tech",
-    categoryTitle: "Tech",
-    content: `
-      <p class="mb-4">Being a student in Nigeria comes with its unique challenges, but these apps can make your life much easier.</p>
-      
-      <h2 class="text-2xl font-semibold mb-3 mt-6">Must-Have Apps for Nigerian Students</h2>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">1. Photomath</h3>
-      <p class="mb-4">Struggling with mathematics? Photomath allows you to scan math problems and get instant solutions with step-by-step explanations. Perfect for when you're stuck on homework.</p>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">2. Google Drive</h3>
-      <p class="mb-4">Never lose your assignments again with cloud storage. Google Drive gives you 15GB of free storage to keep your documents, presentations, and spreadsheets safe and accessible from any device.</p>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">3. Forest</h3>
-      <p class="mb-4">Stay focused during study sessions with this productivity app. Forest plants a virtual tree when you start studying, and the tree grows as long as you don't use your phone. If you leave the app, your tree dies.</p>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">4. Pocket</h3>
-      <p class="mb-4">Save articles, videos, and research materials to read later, even offline. This is essential for research projects when you might not always have internet access.</p>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">5. Duolingo</h3>
-      <p class="mb-4">Learn a new language for free. Adding another language to your CV can give you an edge in the job market after graduation.</p>
-      
-      <h2 class="text-2xl font-semibold mb-3 mt-6">Bonus: Money-Saving Apps</h2>
-      <p class="mb-4">As a student, managing your finances is crucial. Apps like PiggyVest and Cowrywise can help you save small amounts regularly, which add up over time.</p>
-      
-      <p class="mb-4">Download these apps today and watch your student life become more organized and less stressful!</p>
-    `,
-    image: "https://placehold.co/1200x600/9AE19D/FFFFFF?text=Student+Apps",
-    date: "May 28, 2023",
-    author: "Tunde Adewale",
-    authorImage: "https://placehold.co/100x100/9AE19D/FFFFFF?text=TA",
-    readTime: "4 min read",
-    relatedArticles: ["1", "3", "7"],
-    tags: ["Education", "Apps", "Students", "Productivity"]
-  },
-  {
-    id: "3",
-    title: "Getting Your International Passport Without Stress in Nigeria",
-    category: "life",
-    categoryTitle: "Life",
-    content: `
-      <p class="mb-4">The process of getting an international passport in Nigeria has often been described as stressful. However, with the right information and approach, it can be a smooth experience.</p>
-      
-      <h2 class="text-2xl font-semibold mb-3 mt-6">Step-by-Step Guide</h2>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">1. Online Application</h3>
-      <p class="mb-4">Visit the Nigeria Immigration Service website and fill out the application form. Make sure all details are correct to avoid future complications.</p>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">2. Payment</h3>
-      <p class="mb-4">Pay the required fee through the designated bank or payment platform. Keep your receipt safe as you'll need it later.</p>
-      
-      <h3 class="text-xl font-semibold mb-2 mt-4">3. Biometric Capture</h3>
-      <p class="mb-4">Visit the immigration office for your biometric capture. It's best to arrive early to avoid long queues.</p>
-      
-      <h2 class="text-2xl font-semibold mb-3 mt-6">Tips to Make the Process Easier</h2>
-      <p class="mb-4">Consider using the services of a trusted agent if you want to avoid the stress of dealing with the process yourself. Also, prepare all required documents beforehand to avoid unnecessary delays.</p>
-      
-      <p class="mb-4">Remember, patience is key throughout this process. Follow these steps and you'll have your international passport without unnecessary stress!</p>
-    `,
-    image: "https://placehold.co/1200x600/9AE19D/FFFFFF?text=Passport+Guide",
-    date: "April 15, 2023",
-    author: "Ngozi Eze",
-    authorImage: "https://placehold.co/100x100/9AE19D/FFFFFF?text=NE",
-    readTime: "6 min read",
-    relatedArticles: ["1", "2"],
-    tags: ["Travel", "Documentation", "Nigeria", "Guide"]
-  }
-];
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Card } from '@/components/ui/card';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import SEOHead from '@/components/SEOHead';
 
 const ArticlePage = () => {
   const { id } = useParams<{ id: string }>();
-  const article = articles.find(a => a.id === id);
-  
+  const [article, setArticle] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0);
-  }, [article]);
+    const loadArticle = async () => {
+      if (!id) return;
+      
+      try {
+        setIsLoading(true);
+        const data = await fetchArticleById(id);
+        setArticle(data);
+        setError(null);
+      } catch (err: any) {
+        console.error('Error loading article:', err);
+        setError(err.message || 'Failed to load article');
+      } finally {
+        setIsLoading(false);
+      }
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: article?.title,
-        url: window.location.href,
-      })
-      .catch((error) => {
-        console.error('Error sharing:', error);
-        // Fallback if Web Share API fails
-        navigator.clipboard.writeText(window.location.href);
-        toast({
-          title: "Link copied!",
-          description: "Article link copied to clipboard",
-          duration: 3000,
-        });
-      });
-    } else {
-      // Fallback for browsers that don't support Web Share API
-      navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: "Link copied!",
-        description: "Article link copied to clipboard",
-        duration: 3000,
-      });
-    }
+      // Scroll to top when article loads
+      window.scrollTo(0, 0);
+    };
+
+    loadArticle();
+  }, [id]);
+
+  // Format the publishing date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    return format(new Date(dateString), 'MMMM d, yyyy');
   };
 
-  const handleFeedback = (type: 'like' | 'dislike') => {
-    toast({
-      title: "Thanks for your feedback!",
-      description: type === 'like' ? "We're glad you found this helpful" : "We'll work to improve our content",
-      duration: 3000,
-    });
+  // Get author initials for avatar
+  const getAuthorInitials = () => {
+    if (!article?.author?.first_name && !article?.author?.last_name) return '??';
+    
+    const first = article.author.first_name ? article.author.first_name[0] : '';
+    const last = article.author.last_name ? article.author.last_name[0] : '';
+    
+    return (first + last).toUpperCase();
   };
-
-  if (!article) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <SEOHead 
-          title="Article Not Found | Naija Times"
-          description="The article you are looking for does not exist or may have been removed."
-        />
-        <Navbar />
-        <main className="flex-grow flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold mb-4">Article Not Found</h1>
-            <p className="text-gray-600 mb-6">Sorry, the article you're looking for doesn't exist.</p>
-            <Link to="/" className="text-naija-green hover:underline">
-              Return to Home
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Find related articles
-  const relatedArticleData = article.relatedArticles
-    .map(relId => articles.find(a => a.id === relId))
-    .filter(Boolean);
-
-  // Extract first paragraph for meta description
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = article.content;
-  const firstParagraph = tempDiv.querySelector('p')?.textContent || '';
-  const metaDescription = firstParagraph.substring(0, 160) + (firstParagraph.length > 160 ? '...' : '');
 
   return (
     <div className="min-h-screen flex flex-col">
       <SEOHead 
-        title={`${article.title} | Naija Times`}
-        description={metaDescription}
-        keywords={article.tags}
-        author={article.author}
-        ogImage={article.image}
+        title={article ? `${article.title} | Naija Times` : 'Loading Article | Naija Times'}
+        description={article?.excerpt || 'Read this article on Naija Times.'}
+        keywords={article?.category?.name ? [article.category.name] : []}
+        ogImage={article?.featured_image || undefined}
         ogType="article"
       />
       <Navbar />
-      <main className="flex-grow bg-gray-50">
-        {/* Hero Section */}
-        <div className="w-full h-64 md:h-96 bg-gray-200 relative">
-          <img 
-            src={article.image} 
-            alt={article.title} 
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-end">
-            <div className="container px-4 mx-auto pb-8">
-              <Link 
-                to={`/category/${article.category}`}
-                className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-naija-green text-white mb-4"
-              >
-                {article.categoryTitle}
-              </Link>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white max-w-4xl font-heading">
-                {article.title}
-              </h1>
-            </div>
+      
+      <main className="flex-grow pb-12">
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <LoadingSpinner text="Loading article..." />
           </div>
-        </div>
-
-        {/* Article Content */}
-        <div className="container px-4 mx-auto py-12">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Main Content */}
-            <div className="lg:w-2/3">
-              <div className="bg-white rounded-xl shadow-sm p-6 md:p-8">
-                {/* Article Meta */}
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8 pb-6 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full overflow-hidden">
-                      <img 
-                        src={article.authorImage || `https://placehold.co/100x100/9AE19D/FFFFFF?text=${article.author.charAt(0)}`} 
-                        alt={article.author} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <p className="font-medium">{article.author}</p>
-                      <div className="flex items-center gap-3 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Calendar size={14} /> 
-                          {article.date}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={14} /> 
-                          {article.readTime}
-                        </span>
-                      </div>
+        ) : error ? (
+          <div className="container mx-auto px-4 py-12">
+            <Card className="p-8 text-center">
+              <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
+              <p className="mb-6">{error}</p>
+              <Button onClick={() => window.history.back()}>
+                Go Back
+              </Button>
+            </Card>
+          </div>
+        ) : article ? (
+          <>
+            {/* Hero section with image */}
+            {article.featured_image && (
+              <div className="w-full h-[40vh] md:h-[50vh] relative">
+                <div className="absolute inset-0 bg-black/60 z-10" />
+                <img
+                  src={article.featured_image}
+                  alt={article.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="container px-4 mx-auto absolute inset-0 flex items-end pb-8 z-20">
+                  <div className="max-w-3xl">
+                    {article.category && (
+                      <Badge className="mb-4 bg-naija-green hover:bg-naija-green">
+                        {article.category.name}
+                      </Badge>
+                    )}
+                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2">
+                      {article.title}
+                    </h1>
+                    <div className="flex items-center text-white/80">
+                      <span>
+                        {article.published_at
+                          ? formatDate(article.published_at)
+                          : formatDate(article.created_at)}
+                      </span>
+                      <span className="mx-2">•</span>
+                      <span>{article.view_count} views</span>
                     </div>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center gap-2"
-                    onClick={handleShare}
-                  >
-                    Share this article
-                  </Button>
                 </div>
-
-                {/* Tags */}
-                {article.tags && article.tags.length > 0 && (
-                  <div className="mb-6 flex flex-wrap gap-2">
-                    {article.tags.map(tag => (
-                      <Link 
-                        key={tag} 
-                        to={`/tag/${tag.toLowerCase()}`}
-                        className="inline-block px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded-full transition-colors"
-                      >
-                        #{tag}
-                      </Link>
-                    ))}
+              </div>
+            )}
+            
+            {/* Main content */}
+            <div className="container px-4 mx-auto py-8">
+              <div className="max-w-3xl mx-auto">
+                {/* If no featured image, display title here */}
+                {!article.featured_image && (
+                  <div className="mb-8">
+                    {article.category && (
+                      <Badge className="mb-4 bg-naija-green hover:bg-naija-green">
+                        {article.category.name}
+                      </Badge>
+                    )}
+                    <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                      {article.title}
+                    </h1>
+                    <div className="flex items-center text-gray-600">
+                      <span>
+                        {article.published_at
+                          ? formatDate(article.published_at)
+                          : formatDate(article.created_at)}
+                      </span>
+                      <span className="mx-2">•</span>
+                      <span>{article.view_count} views</span>
+                    </div>
                   </div>
                 )}
-
-                {/* Social Share */}
-                <SocialShareButtons url={window.location.href} title={article.title} />
-
-                {/* Article Body */}
+                
+                {/* Author info */}
+                <div className="flex items-center mb-8 border-b pb-4">
+                  <Avatar className="mr-3">
+                    <AvatarFallback>{getAuthorInitials()}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-medium">
+                      {article.author?.first_name && article.author?.last_name
+                        ? `${article.author.first_name} ${article.author.last_name}`
+                        : 'Anonymous Author'}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Naija Times Contributor
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Social share buttons */}
+                <div className="mb-8">
+                  <SocialShareButtons
+                    url={window.location.href}
+                    title={article.title}
+                    media={article.featured_image}
+                  />
+                </div>
+                
+                {/* Article content */}
                 <div 
-                  className="prose max-w-none"
+                  className="prose prose-lg max-w-none mb-12"
                   dangerouslySetInnerHTML={{ __html: article.content }}
                 />
-
-                {/* Article Footer */}
-                <div className="mt-8 pt-6 border-t border-gray-100">
-                  <p className="text-gray-600 mb-4">Was this article helpful?</p>
-                  <div className="flex gap-4">
-                    <Button 
-                      variant="outline" 
-                      className="flex items-center gap-2"
-                      onClick={() => handleFeedback('like')}
-                    >
-                      <ThumbsUp size={16} />
-                      Yes, this helped
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="flex items-center gap-2"
-                      onClick={() => handleFeedback('dislike')}
-                    >
-                      <ThumbsDown size={16} />
-                      Not really
-                    </Button>
+                
+                {/* Tags and sharing */}
+                <div className="flex flex-wrap justify-between items-center mb-12 pt-6 border-t">
+                  <div className="flex flex-wrap gap-2 mb-4 md:mb-0">
+                    <Badge variant="outline">Nigeria</Badge>
+                    <Badge variant="outline">How-To</Badge>
+                    <Badge variant="outline">{article.category?.name || 'General'}</Badge>
                   </div>
-                </div>
-              </div>
-
-              {/* Comments Section */}
-              <div className="mt-8">
-                <CommentSection articleId={article.id} />
-              </div>
-
-              {/* Back to Category */}
-              <div className="mt-6">
-                <Link 
-                  to={`/category/${article.category}`}
-                  className="flex items-center text-naija-green hover:underline gap-1"
-                >
-                  <ChevronLeft size={16} />
-                  Back to {article.categoryTitle}
-                </Link>
-              </div>
-            </div>
-
-            {/* Sidebar */}
-            <div className="lg:w-1/3">
-              {/* Author Info */}
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h3 className="text-xl font-semibold mb-4 font-heading">About the Author</h3>
-                <div className="flex gap-4 items-center">
-                  <img 
-                    src={article.authorImage || `https://placehold.co/100x100/9AE19D/FFFFFF?text=${article.author.charAt(0)}`}
-                    alt={article.author}
-                    className="w-16 h-16 rounded-full object-cover"
+                  
+                  <SocialShareButtons
+                    url={window.location.href}
+                    title={article.title}
+                    media={article.featured_image}
                   />
-                  <div>
-                    <h4 className="font-medium">{article.author}</h4>
-                    <p className="text-sm text-gray-500">Content Creator</p>
-                    <div className="mt-2">
-                      <Link to={`/author/${article.author.toLowerCase().replace(/\s+/g, '-')}`} className="text-naija-green text-sm hover:underline">
-                        View all articles
-                      </Link>
-                    </div>
-                  </div>
                 </div>
-              </div>
-
-              {/* Related Articles */}
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h3 className="text-xl font-semibold mb-4 font-heading">Related Articles</h3>
-                {relatedArticleData.length > 0 ? (
-                  <div className="space-y-4">
-                    {relatedArticleData.map(relArticle => (
-                      relArticle && (
-                        <Link 
-                          key={relArticle.id} 
-                          to={`/article/${relArticle.id}`}
-                          className="block group"
-                        >
-                          <div className="flex gap-3">
-                            <img 
-                              src={relArticle.image} 
-                              alt={relArticle.title} 
-                              className="w-20 h-20 object-cover rounded-lg"
-                            />
-                            <div>
-                              <h4 className="font-medium group-hover:text-naija-green transition-colors">
-                                {relArticle.title}
-                              </h4>
-                              <div className="flex gap-2 text-xs text-gray-500 mt-1">
-                                <span>{relArticle.date}</span>
-                                <span>•</span>
-                                <span>{relArticle.readTime}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      )
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500">No related articles found.</p>
-                )}
-              </div>
-
-              {/* Popular Tags */}
-              <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
-                <h3 className="text-xl font-semibold mb-4 font-heading">Popular Tags</h3>
-                <div className="flex flex-wrap gap-2">
-                  <Link to="/tag/tech" className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors">
-                    #Tech
-                  </Link>
-                  <Link to="/tag/money" className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors">
-                    #Money
-                  </Link>
-                  <Link to="/tag/education" className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors">
-                    #Education
-                  </Link>
-                  <Link to="/tag/business" className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors">
-                    #Business
-                  </Link>
-                  <Link to="/tag/travel" className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors">
-                    #Travel
-                  </Link>
-                  <Link to="/tag/life" className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors">
-                    #Life
-                  </Link>
-                </div>
+                
+                {/* Comments section */}
+                <EnhancedCommentSection articleId={article.id} />
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        ) : null}
       </main>
+      
       <Footer />
     </div>
   );
