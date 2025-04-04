@@ -1,15 +1,17 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 export interface MediaItem {
   id: string;
   name: string;
+  file_name?: string;
   file_path: string;
   file_type: string;
   file_size: number;
   folder_id: string | null;
   uploaded_at: string;
+  created_at?: string;
+  uploaded_by?: string | null;
 }
 
 // Fetch media items

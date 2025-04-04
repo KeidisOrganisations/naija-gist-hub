@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog,
@@ -83,7 +82,6 @@ const MediaSelector = ({ onSelect, onClose }: MediaSelectorProps) => {
     onSelect(selectedItem);
   };
   
-  // Filter media based on search and selected tab
   const filteredMedia = media.filter(item => {
     const matchesSearch = item.file_name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTab = 

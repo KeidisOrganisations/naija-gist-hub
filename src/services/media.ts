@@ -5,11 +5,12 @@ import {
   uploadMediaFile, 
   deleteMediaItem 
 } from './media-service';
-import { MediaItem } from './media-service';
+import type { MediaItem } from './media-service';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-export { MediaItem, uploadMediaFile, deleteMediaItem };
+export type { MediaItem };
+export { uploadMediaFile, deleteMediaItem };
 
 // Fetch media items from Supabase - wrapper for backward compatibility
 export const fetchMediaItems = async () => {

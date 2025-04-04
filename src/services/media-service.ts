@@ -5,11 +5,13 @@ import { toast } from '@/hooks/use-toast';
 export interface MediaItem {
   id: string;
   file_name: string;
+  name: string;           // Add this to match what's used in AdminMedia.tsx
   file_size: number;
   file_type: string;
   file_path: string;
   uploaded_by?: string | null;
   created_at: string;
+  uploaded_at: string;    // Add this to match what's used in AdminMedia.tsx
 }
 
 // Fetch media items
@@ -32,11 +34,13 @@ export async function fetchMediaItems() {
   const mediaItems = (data || []).map(item => ({
     id: item.id,
     file_name: item.name,
+    name: item.name,           // Add this to match AdminMedia.tsx
     file_size: item.file_size,
     file_type: item.file_type,
     file_path: item.file_path,
     uploaded_by: null,
-    created_at: item.uploaded_at
+    created_at: item.uploaded_at,
+    uploaded_at: item.uploaded_at  // Add this to match AdminMedia.tsx
   }));
   
   return mediaItems as MediaItem[];
@@ -98,11 +102,13 @@ export async function uploadMediaFile(file: File) {
     const mediaItem = {
       id: data[0].id,
       file_name: data[0].name,
+      name: data[0].name,           // Add this to match AdminMedia.tsx
       file_size: data[0].file_size,
       file_type: data[0].file_type,
       file_path: data[0].file_path,
       uploaded_by: null,
-      created_at: data[0].uploaded_at
+      created_at: data[0].uploaded_at,
+      uploaded_at: data[0].uploaded_at  // Add this to match AdminMedia.tsx
     };
     
     return mediaItem;
