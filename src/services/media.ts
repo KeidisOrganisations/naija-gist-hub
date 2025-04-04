@@ -1,31 +1,20 @@
 
+// This file re-exports from media-service.ts for backward compatibility
+import { 
+  fetchMediaItems as fetchMedia, 
+  uploadMediaFile, 
+  deleteMediaItem 
+} from './media-service';
+import { MediaItem } from './media-service';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-export interface MediaItem {
-  id: string;
-  name: string;
-  file_type: string;
-  file_size: number;
-  file_path: string;
-  folder_id: string | null;
-  uploaded_at: string;
-}
+export { MediaItem, uploadMediaFile, deleteMediaItem };
 
-// Fetch media items from Supabase
+// Fetch media items from Supabase - wrapper for backward compatibility
 export const fetchMediaItems = async () => {
   try {
-    const { data, error } = await supabase
-      .from('media')
-      .select('*')
-      .order('uploaded_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching media items:', error);
-      throw new Error(error.message);
-    }
-    
-    return data || [];
+    return await fetchMedia();
   } catch (error: any) {
     console.error('Error in fetchMediaItems:', error);
     toast({
@@ -51,112 +40,6 @@ export const fetchMediaFolders = async () => {
       variant: "destructive",
     });
     return [];
-  }
-};
-
-// Upload a media file to Supabase
-export const uploadMediaFile = async (file: File, folder_id: string | null = null) => {
-  try {
-    // Create a unique filename
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-    const filePath = `uploads/${fileName}`;
-    
-    console.log('Uploading file to storage:', filePath);
-    
-    // Upload the file to Supabase Storage
-    const { error: uploadError, data: uploadData } = await supabase.storage
-      .from('media')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-      
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      throw uploadError;
-    }
-    
-    console.log('File uploaded successfully, getting public URL');
-    
-    // Get the public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('media')
-      .getPublicUrl(filePath);
-      
-    console.log('Public URL:', publicUrl);
-      
-    // Insert the file info into the media table
-    const { data, error: insertError } = await supabase
-      .from('media')
-      .insert([
-        {
-          name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-          file_path: publicUrl,
-          folder_id: folder_id
-        }
-      ])
-      .select();
-      
-    if (insertError) {
-      console.error('Insert error:', insertError);
-      throw insertError;
-    }
-    
-    console.log('Media item created in database:', data);
-    
-    return data[0];
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    throw error;
-  }
-};
-
-// Delete a media item
-export const deleteMediaItem = async (id: string) => {
-  try {
-    // Get the file path first
-    const { data: mediaItem, error: fetchError } = await supabase
-      .from('media')
-      .select('file_path')
-      .eq('id', id)
-      .single();
-      
-    if (fetchError) throw fetchError;
-    
-    // Extract the storage path from the public URL
-    const urlParts = mediaItem.file_path.split('/');
-    const storagePath = `uploads/${urlParts[urlParts.length - 1]}`;
-    
-    console.log('Deleting file from storage:', storagePath);
-    
-    // Delete from storage
-    const { error: storageError } = await supabase.storage
-      .from('media')
-      .remove([storagePath]);
-      
-    if (storageError) {
-      console.error('Storage delete error:', storageError);
-      // Don't throw here, still try to delete from the database
-    }
-    
-    // Delete from database
-    const { error: deleteError } = await supabase
-      .from('media')
-      .delete()
-      .eq('id', id);
-      
-    if (deleteError) {
-      console.error('Database delete error:', deleteError);
-      throw deleteError;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error deleting media item:', error);
-    throw error;
   }
 };
 
