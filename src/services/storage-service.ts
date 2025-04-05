@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -147,15 +148,13 @@ export async function deleteFile(bucket: string, path: string) {
   }
 }
 
-// This file re-exports from media-service.ts for backward compatibility
+// Re-export media functions for backward compatibility
 import { 
   fetchMediaItems as fetchMedia, 
   uploadMediaFile, 
   deleteMediaItem 
 } from './media-service';
 import type { MediaItem } from './media-service';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 
 export type { MediaItem };
 export { uploadMediaFile, deleteMediaItem };
