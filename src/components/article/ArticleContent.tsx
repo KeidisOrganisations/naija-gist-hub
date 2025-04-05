@@ -1,4 +1,5 @@
 
+import { useEffect } from 'react';
 import SocialShareButtons from '@/components/SocialShareButtons';
 import { Tag } from 'lucide-react';
 
@@ -7,13 +8,22 @@ interface ArticleContentProps {
   featuredImage?: string | null;
   title: string;
   url: string;
+  tags?: string[];
 }
 
-const ArticleContent = ({ content, featuredImage, title, url }: ArticleContentProps) => {
+const ArticleContent = ({ content, featuredImage, title, url, tags = [] }: ArticleContentProps) => {
   // Create HTML from content
   const createMarkup = () => {
     return { __html: content };
   };
+
+  // Scroll to top when article content changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [content]);
+
+  // Extract tags from content if not provided
+  const derivedTags = tags.length > 0 ? tags : ['Nigeria', 'How-to', 'Guide'];
 
   return (
     <div className="article-content">
@@ -23,7 +33,8 @@ const ArticleContent = ({ content, featuredImage, title, url }: ArticleContentPr
           <img 
             src={featuredImage} 
             alt={title}
-            className="w-full h-auto rounded-lg object-cover"
+            className="w-full h-auto rounded-lg object-cover shadow-md"
+            style={{ maxHeight: '500px' }}
             onError={(e) => {
               // Fallback if image fails to load
               const target = e.target as HTMLImageElement;
@@ -36,7 +47,7 @@ const ArticleContent = ({ content, featuredImage, title, url }: ArticleContentPr
       
       {/* Article content */}
       <div 
-        className="prose prose-lg max-w-none mb-8"
+        className="prose prose-lg max-w-none mb-8 prose-headings:text-naija-green prose-a:text-blue-600"
         dangerouslySetInnerHTML={createMarkup()}
       />
       
@@ -51,9 +62,11 @@ const ArticleContent = ({ content, featuredImage, title, url }: ArticleContentPr
           <Tag className="mr-1 h-4 w-4" />
           Tags:
         </span>
-        <span className="px-3 py-1 bg-gray-100 rounded-full text-sm">Nigeria</span>
-        <span className="px-3 py-1 bg-gray-100 rounded-full text-sm">How-to</span>
-        <span className="px-3 py-1 bg-gray-100 rounded-full text-sm">Guide</span>
+        {derivedTags.map((tag, index) => (
+          <span key={index} className="px-3 py-1 bg-gray-100 rounded-full text-sm hover:bg-gray-200 transition-colors">
+            {tag}
+          </span>
+        ))}
       </div>
     </div>
   );

@@ -34,7 +34,7 @@ const SampleDataButton = () => {
         });
         
         // Invalidate queries to refresh data
-        queryClient.invalidateQueries({ queryKey: ['admin-articles'] });
+        queryClient.invalidateQueries({ queryKey: ['articles'] });
         queryClient.invalidateQueries({ queryKey: ['categories'] });
         queryClient.invalidateQueries({ queryKey: ['trending-articles'] });
         
@@ -58,14 +58,10 @@ const SampleDataButton = () => {
     }
   };
   
-  if (hasData) {
-    return null; // Don't show button if sample data already exists
-  }
-  
   return (
     <Button 
       onClick={handleAddSampleData}
-      disabled={isLoading}
+      disabled={isLoading || hasData}
       className="bg-naija-green hover:bg-naija-green/90"
     >
       {isLoading ? (
@@ -73,6 +69,8 @@ const SampleDataButton = () => {
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Adding Sample Data...
         </>
+      ) : hasData ? (
+        'Sample Data Already Added'
       ) : (
         'Add Sample Articles & Categories'
       )}
