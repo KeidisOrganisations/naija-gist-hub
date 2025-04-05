@@ -1,6 +1,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { 
+  fetchMediaItems as fetchMedia, 
+  uploadMediaFile, 
+  deleteMediaItem 
+} from './media-service';
+import type { MediaItem } from './media-service';
 
 // Initialize storage buckets if they don't exist
 export async function initializeStorage() {
@@ -147,14 +153,6 @@ export async function deleteFile(bucket: string, path: string) {
     };
   }
 }
-
-// Re-export media functions for backward compatibility
-import { 
-  fetchMediaItems as fetchMedia, 
-  uploadMediaFile, 
-  deleteMediaItem 
-} from './media-service';
-import type { MediaItem } from './media-service';
 
 export type { MediaItem };
 export { uploadMediaFile, deleteMediaItem };
