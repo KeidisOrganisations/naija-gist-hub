@@ -2,10 +2,10 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-// Initialize storage bucket if it doesn't exist
+// Initialize storage buckets if they don't exist
 export async function initializeStorage() {
   try {
-    // Check if media bucket exists
+    // Check if buckets exist
     const { data: buckets, error: getBucketsError } = await supabase
       .storage
       .listBuckets();
@@ -13,35 +13,39 @@ export async function initializeStorage() {
     if (getBucketsError) {
       console.error('Error checking storage buckets:', getBucketsError);
       toast({
-        title: "Storage Info",
-        description: "Using existing storage configuration. No changes needed.",
+        title: "Storage Error",
+        description: "Could not verify storage buckets. Some features might not work properly.",
+        variant: "destructive",
       });
-      return true; // Continue with the application even if we can't check buckets
+      return false;
     }
     
     const mediaBucketExists = buckets?.some(bucket => bucket.name === 'media');
+    const assetsBucketExists = buckets?.some(bucket => bucket.name === 'assets');
     
-    if (!mediaBucketExists) {
-      console.log('Media bucket does not exist, but it should have been created by SQL migration');
+    if (!mediaBucketExists || !assetsBucketExists) {
+      console.log('Some required buckets do not exist');
       toast({
-        title: "Storage Info",
-        description: "Using existing storage configuration.",
+        title: "Storage Notice",
+        description: "Required storage buckets not found. Please contact an administrator.",
+        variant: "destructive",
       });
+      return false;
     } else {
-      console.log('Media storage bucket exists');
+      console.log('All required storage buckets exist');
       toast({
         title: "Storage Ready",
-        description: "Media storage system is available.",
+        description: "Media storage system is initialized and available.",
       });
+      return true;
     }
-    
-    return true;
   } catch (error) {
     console.error('Error initializing storage:', error);
     toast({
-      title: "Storage Notice",
-      description: "Using default storage configuration.",
+      title: "Storage Error",
+      description: "Failed to initialize storage system.",
+      variant: "destructive",
     });
-    return true; // Return true so the app continues to function
+    return false;
   }
 }

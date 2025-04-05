@@ -24,6 +24,12 @@ const ArticleContent = ({ content, featuredImage, title, url }: ArticleContentPr
             src={featuredImage} 
             alt={title}
             className="w-full h-auto rounded-lg object-cover"
+            onError={(e) => {
+              // Fallback if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.onerror = null;
+              target.src = '/placeholder.svg';
+            }}
           />
         </div>
       )}

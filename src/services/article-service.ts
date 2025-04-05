@@ -80,51 +80,91 @@ export async function fetchArticleById(id: string) {
 
 // Create a new article
 export async function createArticle(article: Omit<Article, 'id'>) {
-  const { data, error } = await supabase
-    .from('articles')
-    .insert([article])
-    .select();
+  try {
+    console.log("Creating new article:", article);
+    
+    const { data, error } = await supabase
+      .from('articles')
+      .insert([article])
+      .select();
 
-  if (error) {
+    if (error) {
+      console.error("Error creating article:", error);
+      toast({
+        title: "Error creating article",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      const noDataError = new Error("No data returned from insert operation");
+      console.error(noDataError);
+      toast({
+        title: "Error creating article",
+        description: "Failed to create article. No data returned.",
+        variant: "destructive",
+      });
+      throw noDataError;
+    }
+    
+    console.log("Article created successfully:", data[0]);
     toast({
-      title: "Error creating article",
-      description: error.message,
-      variant: "destructive",
+      title: "Article created",
+      description: "Your article has been created successfully.",
     });
+    
+    return data[0];
+  } catch (error: any) {
+    console.error("Error in createArticle function:", error);
     throw error;
   }
-  
-  toast({
-    title: "Article created",
-    description: "Your article has been created successfully.",
-  });
-  
-  return data[0];
 }
 
 // Update an existing article
 export async function updateArticle(id: string, article: Partial<Article>) {
-  const { data, error } = await supabase
-    .from('articles')
-    .update(article)
-    .eq('id', id)
-    .select();
+  try {
+    console.log(`Updating article with ID ${id}:`, article);
+    
+    const { data, error } = await supabase
+      .from('articles')
+      .update(article)
+      .eq('id', id)
+      .select();
 
-  if (error) {
+    if (error) {
+      console.error("Error updating article:", error);
+      toast({
+        title: "Error updating article",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      const noDataError = new Error("No data returned from update operation");
+      console.error(noDataError);
+      toast({
+        title: "Error updating article",
+        description: "Failed to update article. No data returned.",
+        variant: "destructive",
+      });
+      throw noDataError;
+    }
+    
+    console.log("Article updated successfully:", data[0]);
     toast({
-      title: "Error updating article",
-      description: error.message,
-      variant: "destructive",
+      title: "Article updated",
+      description: "Your article has been updated successfully.",
     });
+    
+    return data[0];
+  } catch (error: any) {
+    console.error("Error in updateArticle function:", error);
     throw error;
   }
-  
-  toast({
-    title: "Article updated",
-    description: "Your article has been updated successfully.",
-  });
-  
-  return data[0];
 }
 
 // Delete an article
@@ -153,91 +193,123 @@ export async function deleteArticle(id: string) {
 
 // Fetch categories
 export async function fetchCategories() {
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .order('name');
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name');
 
-  if (error) {
-    toast({
-      title: "Error fetching categories",
-      description: error.message,
-      variant: "destructive",
-    });
+    if (error) {
+      toast({
+        title: "Error fetching categories",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchCategories function:", error);
     throw error;
   }
-  
-  return data || [];
 }
 
 // Create a new category
 export async function createCategory(category: { name: string; slug: string; description?: string }) {
-  const { data, error } = await supabase
-    .from('categories')
-    .insert([category])
-    .select();
+  try {
+    console.log("Creating new category:", category);
     
-  if (error) {
+    const { data, error } = await supabase
+      .from('categories')
+      .insert([category])
+      .select();
+      
+    if (error) {
+      console.error("Error creating category:", error);
+      toast({
+        title: "Error creating category",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+    
+    console.log("Category created successfully:", data);
     toast({
-      title: "Error creating category",
-      description: error.message,
-      variant: "destructive",
+      title: "Category created",
+      description: "Your category has been created successfully.",
     });
+    
+    return data[0];
+  } catch (error) {
+    console.error("Error in createCategory function:", error);
     throw error;
   }
-  
-  toast({
-    title: "Category created",
-    description: "Your category has been created successfully.",
-  });
-  
-  return data[0];
 }
 
 // Bulk update article status
 export async function updateArticleStatus(ids: string[], status: string) {
-  const { error } = await supabase
-    .from('articles')
-    .update({ status })
-    .in('id', ids);
+  try {
+    console.log(`Updating status to '${status}' for articles:`, ids);
+    
+    const { error } = await supabase
+      .from('articles')
+      .update({ status })
+      .in('id', ids);
 
-  if (error) {
+    if (error) {
+      console.error("Error updating articles status:", error);
+      toast({
+        title: "Error updating articles",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+    
+    console.log("Articles status updated successfully");
     toast({
-      title: "Error updating articles",
-      description: error.message,
-      variant: "destructive",
+      title: "Articles updated",
+      description: `${ids.length} articles have been updated.`,
     });
+    
+    return true;
+  } catch (error) {
+    console.error("Error in updateArticleStatus function:", error);
     throw error;
   }
-  
-  toast({
-    title: "Articles updated",
-    description: `${ids.length} articles have been updated.`,
-  });
-  
-  return true;
 }
 
 // Bulk delete articles
 export async function deleteArticles(ids: string[]) {
-  const { error } = await supabase
-    .from('articles')
-    .delete()
-    .in('id', ids);
+  try {
+    console.log("Deleting articles:", ids);
+    
+    const { error } = await supabase
+      .from('articles')
+      .delete()
+      .in('id', ids);
 
-  if (error) {
+    if (error) {
+      console.error("Error deleting articles:", error);
+      toast({
+        title: "Error deleting articles",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+    
+    console.log("Articles deleted successfully");
     toast({
-      title: "Error deleting articles",
-      description: error.message,
-      variant: "destructive",
+      title: "Articles deleted",
+      description: `${ids.length} articles have been deleted.`,
     });
+    
+    return true;
+  } catch (error) {
+    console.error("Error in deleteArticles function:", error);
     throw error;
   }
-  
-  toast({
-    title: "Articles deleted",
-    description: `${ids.length} articles have been deleted.`,
-  });
-  
-  return true;
 }

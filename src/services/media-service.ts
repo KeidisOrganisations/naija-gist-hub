@@ -5,53 +5,62 @@ import { toast } from '@/hooks/use-toast';
 export interface MediaItem {
   id: string;
   file_name: string;
-  name: string;           // Add this to match what's used in AdminMedia.tsx
+  name: string;
   file_size: number;
   file_type: string;
   file_path: string;
   uploaded_by?: string | null;
   created_at: string;
-  uploaded_at: string;    // Add this to match what's used in AdminMedia.tsx
+  uploaded_at: string;
 }
 
 // Fetch media items
 export async function fetchMediaItems() {
-  const { data, error } = await supabase
-    .from('media')
-    .select('*')
-    .order('uploaded_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('media')
+      .select('*')
+      .order('uploaded_at', { ascending: false });
 
-  if (error) {
-    toast({
-      title: "Error fetching media",
-      description: error.message,
-      variant: "destructive",
-    });
-    throw error;
+    if (error) {
+      toast({
+        title: "Error fetching media",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+    
+    // Transform the data to match our MediaItem interface
+    const mediaItems = (data || []).map(item => ({
+      id: item.id,
+      file_name: item.name,
+      name: item.name,
+      file_size: item.file_size,
+      file_type: item.file_type,
+      file_path: item.file_path,
+      uploaded_by: null,
+      created_at: item.uploaded_at,
+      uploaded_at: item.uploaded_at
+    }));
+    
+    return mediaItems as MediaItem[];
+  } catch (error) {
+    console.error('Error in fetchMediaItems:', error);
+    return [];
   }
-  
-  // Transform the data to match our MediaItem interface
-  const mediaItems = (data || []).map(item => ({
-    id: item.id,
-    file_name: item.name,
-    name: item.name,           // Add this to match AdminMedia.tsx
-    file_size: item.file_size,
-    file_type: item.file_type,
-    file_path: item.file_path,
-    uploaded_by: null,
-    created_at: item.uploaded_at,
-    uploaded_at: item.uploaded_at  // Add this to match AdminMedia.tsx
-  }));
-  
-  return mediaItems as MediaItem[];
 }
 
 // Upload a media file
 export async function uploadMediaFile(file: File) {
   try {
-    // First, upload the file to Supabase Storage
-    const filePath = `uploads/${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+    // Generate a unique file name to avoid conflicts
+    const timestamp = new Date().getTime();
+    const fileExtension = file.name.split('.').pop();
+    const uniqueFileName = `${timestamp}_${file.name.replace(/\s+/g, '_')}`;
+    const filePath = `uploads/${uniqueFileName}`;
     
+    // First, upload the file to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase
       .storage
       .from('media')
@@ -60,7 +69,7 @@ export async function uploadMediaFile(file: File) {
     if (uploadError) {
       console.error('Error uploading file:', uploadError);
       toast({
-        title: "Error uploading file",
+        title: "Upload Failed",
         description: uploadError.message,
         variant: "destructive",
       });
@@ -73,7 +82,7 @@ export async function uploadMediaFile(file: File) {
       .from('media')
       .getPublicUrl(filePath);
 
-    // Then, add a record to the media table
+    // Add record to the media table
     const { data, error } = await supabase
       .from('media')
       .insert([{
@@ -87,28 +96,29 @@ export async function uploadMediaFile(file: File) {
     if (error) {
       console.error('Error saving media record:', error);
       toast({
-        title: "Error saving media record",
+        title: "Media Record Error",
         description: error.message,
         variant: "destructive",
       });
       throw error;
     }
     
-    if (!data || data.length === 0) {
-      throw new Error("No data returned from insert operation");
-    }
+    toast({
+      title: "Upload Successful",
+      description: "Your file has been uploaded successfully.",
+    });
     
     // Transform the data to match our MediaItem interface
     const mediaItem = {
       id: data[0].id,
       file_name: data[0].name,
-      name: data[0].name,           // Add this to match AdminMedia.tsx
+      name: data[0].name,
       file_size: data[0].file_size,
       file_type: data[0].file_type,
       file_path: data[0].file_path,
       uploaded_by: null,
       created_at: data[0].uploaded_at,
-      uploaded_at: data[0].uploaded_at  // Add this to match AdminMedia.tsx
+      uploaded_at: data[0].uploaded_at
     };
     
     return mediaItem;
@@ -137,22 +147,32 @@ export async function deleteMediaItem(id: string) {
       throw fetchError;
     }
 
-    // Extract the path from the URL
-    const url = new URL(mediaItem.file_path);
-    const pathWithoutHost = url.pathname;
-    const storagePath = pathWithoutHost.split('/').slice(2).join('/'); // Remove initial /media/ prefix
-    
-    if (storagePath) {
-      // Delete from storage
-      const { error: storageError } = await supabase
-        .storage
-        .from('media')
-        .remove([storagePath]);
+    // Try to extract the path from the URL for deletion from storage
+    try {
+      const url = new URL(mediaItem.file_path);
+      const pathParts = url.pathname.split('/');
+      // The expected format is /storage/v1/object/public/media/path/to/file
+      // We need to extract just the path/to/file part
+      const bucketIndex = pathParts.findIndex(part => part === 'media');
+      if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
+        const storagePath = pathParts.slice(bucketIndex + 1).join('/');
+        
+        // Delete from storage
+        const { error: storageError } = await supabase
+          .storage
+          .from('media')
+          .remove([storagePath]);
 
-      if (storageError) {
-        console.error("Error deleting file from storage:", storageError);
-        // We'll still try to delete the database record
+        if (storageError) {
+          console.error("Error deleting file from storage:", storageError);
+          // We'll still try to delete the database record even if storage deletion fails
+        } else {
+          console.log("File successfully deleted from storage:", storagePath);
+        }
       }
+    } catch (pathError) {
+      console.error("Error parsing file path:", pathError);
+      // Continue with deleting the database record even if parsing fails
     }
 
     // Delete the database record
@@ -169,6 +189,11 @@ export async function deleteMediaItem(id: string) {
       });
       throw error;
     }
+    
+    toast({
+      title: "File Deleted",
+      description: "The file has been deleted successfully.",
+    });
     
     return true;
   } catch (error: any) {
