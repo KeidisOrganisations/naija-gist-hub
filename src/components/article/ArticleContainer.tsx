@@ -30,6 +30,11 @@ interface ArticleContainerProps {
 
 const ArticleContainer = ({ article }: ArticleContainerProps) => {
   const articleUrl = window.location.href;
+  
+  // Extract tags from category name if available
+  const tags = article.categories?.name ? 
+    [article.categories.name, 'Nigeria', 'Guide'] : 
+    ['Nigeria', 'How-to', 'Guide'];
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -57,6 +62,7 @@ const ArticleContainer = ({ article }: ArticleContainerProps) => {
         featuredImage={article.featured_image}
         title={article.title}
         url={articleUrl}
+        tags={tags}
       />
       
       {/* Comments section */}

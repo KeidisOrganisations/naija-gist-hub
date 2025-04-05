@@ -39,7 +39,7 @@ const ArticleContent = ({ content, featuredImage, title, url, tags = [] }: Artic
               // Fallback if image fails to load
               const target = e.target as HTMLImageElement;
               target.onerror = null;
-              target.src = '/placeholder.svg';
+              target.src = 'https://placehold.co/600x400/9AE19D/FFFFFF?text=Naija+Times';
             }}
           />
         </div>

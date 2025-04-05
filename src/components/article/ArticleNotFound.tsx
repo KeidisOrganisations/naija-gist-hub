@@ -23,7 +23,9 @@ const ArticleNotFound = ({ error, onRetry }: ArticleNotFoundProps) => {
           </h1>
           
           <p className="text-center mb-6 text-gray-600">
-            The article you're looking for doesn't exist or has been removed.
+            {error && error.includes('network') ? 
+              'There was a problem connecting to the server. Please check your internet connection.' :
+              'The article you\'re looking for doesn\'t exist or has been removed.'}
           </p>
           
           <div className="flex flex-wrap gap-4 justify-center">
