@@ -32,13 +32,16 @@ import {
   User,
   Shield,
   Lock,
+  Loader2,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { fetchSiteSettings, saveSiteSettings, SiteSettings } from '@/services/settings-service';
 
 const AdminSettings = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [siteSettings, setSiteSettings] = useState({
+  const [isLoading, setIsLoading] = useState(false);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({
     siteName: 'Naija Hub',
     siteDescription: 'Nigeria\'s premier destination for tech, lifestyle, and business insights.',
     contactEmail: 'info@naijahub.com',
@@ -69,8 +72,25 @@ const AdminSettings = () => {
       navigate('/admin/login');
     } else {
       setIsAuthenticated(true);
+      // Load settings
+      loadSettings();
     }
   }, [navigate]);
+
+  const loadSettings = async () => {
+    try {
+      setIsLoading(true);
+      const settings = await fetchSiteSettings();
+      if (settings) {
+        setSiteSettings(settings);
+        setIsDarkMode(settings.enableDarkMode);
+      }
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSiteSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -98,13 +118,28 @@ const AdminSettings = () => {
     });
   };
 
-  const handleSaveSettings = (tab: string) => {
-    // In a real app, you would send the settings to your backend
-    toast({
-      title: "Settings saved",
-      description: `${tab} settings have been successfully saved.`,
-      duration: 3000,
-    });
+  const handleSaveSettings = async (tab: string) => {
+    try {
+      setIsLoading(true);
+      // Save settings to database
+      await saveSiteSettings(siteSettings);
+      
+      toast({
+        title: "Settings saved",
+        description: `${tab} settings have been successfully saved.`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error(`Failed to save ${tab} settings:`, error);
+      toast({
+        title: "Error saving settings",
+        description: `An error occurred while saving ${tab} settings.`,
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogoUpload = () => {
@@ -131,7 +166,10 @@ const AdminSettings = () => {
             <div className="flex gap-2">
               <Switch
                 checked={isDarkMode}
-                onCheckedChange={setIsDarkMode}
+                onCheckedChange={(checked) => {
+                  setIsDarkMode(checked);
+                  handleSwitchChange('enableDarkMode', checked);
+                }}
                 id="dark-mode"
               />
               <Label htmlFor="dark-mode" className="flex items-center gap-2">
@@ -143,6 +181,15 @@ const AdminSettings = () => {
         </header>
         
         <main className="p-6">
+          {isLoading && (
+            <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+              <div className="bg-white p-4 rounded-lg shadow-lg flex items-center gap-3">
+                <Loader2 className="animate-spin h-5 w-5" />
+                <span>Loading settings...</span>
+              </div>
+            </div>
+          )}
+          
           <Tabs defaultValue="general">
             <TabsList className="mb-6">
               <TabsTrigger value="general">General</TabsTrigger>
@@ -244,8 +291,11 @@ const AdminSettings = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
-                  <Button onClick={() => handleSaveSettings('General')}>
-                    <Save className="mr-2 h-4 w-4" />
+                  <Button 
+                    onClick={() => handleSaveSettings('General')}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Save Changes
                   </Button>
                 </CardFooter>
@@ -368,8 +418,11 @@ const AdminSettings = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
-                  <Button onClick={() => handleSaveSettings('Appearance')}>
-                    <Save className="mr-2 h-4 w-4" />
+                  <Button 
+                    onClick={() => handleSaveSettings('Appearance')}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Save Changes
                   </Button>
                 </CardFooter>
@@ -430,8 +483,11 @@ const AdminSettings = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
-                  <Button onClick={() => handleSaveSettings('Notifications')}>
-                    <Save className="mr-2 h-4 w-4" />
+                  <Button 
+                    onClick={() => handleSaveSettings('Notifications')}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Save Changes
                   </Button>
                 </CardFooter>
@@ -504,8 +560,11 @@ const AdminSettings = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
-                  <Button onClick={() => handleSaveSettings('Security')}>
-                    <Save className="mr-2 h-4 w-4" />
+                  <Button 
+                    onClick={() => handleSaveSettings('Security')}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Save Changes
                   </Button>
                 </CardFooter>
