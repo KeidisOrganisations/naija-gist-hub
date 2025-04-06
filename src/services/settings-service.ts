@@ -21,6 +21,62 @@ export interface SiteSettings {
   updated_at?: string;
 }
 
+// Interface mapping to the database column names
+interface DBSiteSettings {
+  id?: string;
+  sitename: string;
+  sitedescription: string;
+  contactemail: string;
+  copyrighttext: string;
+  enablecomments: boolean;
+  moderatecomments: boolean;
+  enablenewsletter: boolean;
+  enabledarkmode: boolean;
+  sociallinks: {
+    facebook: string;
+    twitter: string;
+    instagram: string;
+  };
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Convert DB format to our interface format
+function dbToInterface(dbSettings: DBSiteSettings): SiteSettings {
+  return {
+    id: dbSettings.id,
+    siteName: dbSettings.sitename,
+    siteDescription: dbSettings.sitedescription,
+    contactEmail: dbSettings.contactemail,
+    copyrightText: dbSettings.copyrighttext,
+    enableComments: dbSettings.enablecomments,
+    moderateComments: dbSettings.moderatecomments,
+    enableNewsletter: dbSettings.enablenewsletter,
+    enableDarkMode: dbSettings.enabledarkmode,
+    socialLinks: dbSettings.sociallinks,
+    created_at: dbSettings.created_at,
+    updated_at: dbSettings.updated_at
+  };
+}
+
+// Convert our interface format to DB format
+function interfaceToDb(settings: SiteSettings): DBSiteSettings {
+  return {
+    id: settings.id,
+    sitename: settings.siteName,
+    sitedescription: settings.siteDescription,
+    contactemail: settings.contactEmail,
+    copyrighttext: settings.copyrightText,
+    enablecomments: settings.enableComments,
+    moderatecomments: settings.moderateComments,
+    enablenewsletter: settings.enableNewsletter,
+    enabledarkmode: settings.enableDarkMode,
+    sociallinks: settings.socialLinks,
+    created_at: settings.created_at,
+    updated_at: settings.updated_at
+  };
+}
+
 // Fetch current site settings
 export async function fetchSiteSettings() {
   try {
@@ -46,7 +102,7 @@ export async function fetchSiteSettings() {
       throw error;
     }
     
-    return data as SiteSettings;
+    return data ? dbToInterface(data as DBSiteSettings) : null;
   } catch (error: any) {
     console.error("Error in fetchSiteSettings function:", error);
     throw error;
@@ -57,6 +113,8 @@ export async function fetchSiteSettings() {
 export async function saveSiteSettings(settings: SiteSettings) {
   try {
     console.log("Saving site settings:", settings);
+    
+    const dbSettings = interfaceToDb(settings);
     
     const { data: existingSettings } = await supabase
       .from('site_settings')
@@ -70,15 +128,15 @@ export async function saveSiteSettings(settings: SiteSettings) {
       const { data, error } = await supabase
         .from('site_settings')
         .update({
-          siteName: settings.siteName,
-          siteDescription: settings.siteDescription,
-          contactEmail: settings.contactEmail,
-          copyrightText: settings.copyrightText,
-          enableComments: settings.enableComments,
-          moderateComments: settings.moderateComments,
-          enableNewsletter: settings.enableNewsletter,
-          enableDarkMode: settings.enableDarkMode,
-          socialLinks: settings.socialLinks,
+          sitename: dbSettings.sitename,
+          sitedescription: dbSettings.sitedescription,
+          contactemail: dbSettings.contactemail,
+          copyrighttext: dbSettings.copyrighttext,
+          enablecomments: dbSettings.enablecomments,
+          moderatecomments: dbSettings.moderatecomments,
+          enablenewsletter: dbSettings.enablenewsletter,
+          enabledarkmode: dbSettings.enabledarkmode,
+          sociallinks: dbSettings.sociallinks,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingSettings[0].id)
@@ -94,21 +152,21 @@ export async function saveSiteSettings(settings: SiteSettings) {
         throw error;
       }
       
-      result = data && data[0];
+      result = data && data[0] ? dbToInterface(data[0] as DBSiteSettings) : null;
     } else {
       // Create new settings
       const { data, error } = await supabase
         .from('site_settings')
         .insert([{
-          siteName: settings.siteName,
-          siteDescription: settings.siteDescription,
-          contactEmail: settings.contactEmail,
-          copyrightText: settings.copyrightText,
-          enableComments: settings.enableComments,
-          moderateComments: settings.moderateComments,
-          enableNewsletter: settings.enableNewsletter,
-          enableDarkMode: settings.enableDarkMode,
-          socialLinks: settings.socialLinks
+          sitename: dbSettings.sitename,
+          sitedescription: dbSettings.sitedescription,
+          contactemail: dbSettings.contactemail,
+          copyrighttext: dbSettings.copyrighttext,
+          enablecomments: dbSettings.enablecomments,
+          moderatecomments: dbSettings.moderatecomments,
+          enablenewsletter: dbSettings.enablenewsletter,
+          enabledarkmode: dbSettings.enabledarkmode,
+          sociallinks: dbSettings.sociallinks
         }])
         .select();
 
@@ -122,7 +180,7 @@ export async function saveSiteSettings(settings: SiteSettings) {
         throw error;
       }
       
-      result = data && data[0];
+      result = data && data[0] ? dbToInterface(data[0] as DBSiteSettings) : null;
     }
     
     console.log("Site settings saved successfully:", result);

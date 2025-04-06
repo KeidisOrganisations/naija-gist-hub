@@ -11,5 +11,12 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Create a single supabase client for the entire app
 export const supabase = createClient<Database>(
   SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
+  SUPABASE_PUBLISHABLE_KEY, 
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      storage: localStorage
+    }
+  }
 );
