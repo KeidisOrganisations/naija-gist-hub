@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async"; // Add this import
+import { HelmetProvider } from "react-helmet-async"; 
 import { InitializeStorageLoader } from "@/components/ui/initialize-storage-loader";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -19,6 +19,7 @@ import AdminArticleList from "./pages/admin/AdminArticleList";
 import AdminArticleEditor from "./pages/admin/AdminArticleEditor";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminMedia from "./pages/admin/AdminMedia";
+import AdminBatchImport from "./pages/admin/AdminBatchImport"; // Add this import
 import AdminComments from "./pages/admin/AdminComments";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminNewsletter from "./pages/admin/AdminNewsletter";
