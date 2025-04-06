@@ -51,7 +51,7 @@ export async function batchAddArticles(articles: Array<Partial<Article> & { titl
       toast({
         title: "Articles imported",
         description: `Successfully imported ${results.success} articles. ${results.failed > 0 ? `Failed: ${results.failed}` : ''}`,
-        variant: results.failed > 0 ? "warning" : "default",
+        variant: results.failed > 0 ? "destructive" : "default",
       });
     } else {
       toast({
@@ -134,7 +134,7 @@ export async function batchAddMedia(mediaItems: Array<{
       toast({
         title: "Media imported",
         description: `Successfully imported ${results.success} media items. ${results.failed > 0 ? `Failed: ${results.failed}` : ''}`,
-        variant: results.failed > 0 ? "warning" : "default",
+        variant: results.failed > 0 ? "destructive" : "default",
       });
     } else {
       toast({
