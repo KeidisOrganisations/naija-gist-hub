@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async"; 
 import { InitializeStorageLoader } from "@/components/ui/initialize-storage-loader";
+import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CategoryPage from "./pages/CategoryPage";
@@ -19,7 +20,7 @@ import AdminArticleList from "./pages/admin/AdminArticleList";
 import AdminArticleEditor from "./pages/admin/AdminArticleEditor";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminMedia from "./pages/admin/AdminMedia";
-import AdminBatchImport from "./pages/admin/AdminBatchImport"; // Add this import
+import AdminBatchImport from "./pages/admin/AdminBatchImport";
 import AdminComments from "./pages/admin/AdminComments";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminNewsletter from "./pages/admin/AdminNewsletter";
@@ -66,6 +67,7 @@ const AppContent = () => {
       <Route path="/admin/articles/edit/:id" element={<AdminArticleEditor />} />
       <Route path="/admin/categories" element={<AdminCategories />} />
       <Route path="/admin/media" element={<AdminMedia />} />
+      <Route path="/admin/batch-import" element={<AdminBatchImport />} />
       <Route path="/admin/comments" element={<AdminComments />} />
       <Route path="/admin/notifications" element={<AdminNotifications />} />
       <Route path="/admin/newsletter" element={<AdminNewsletter />} />
@@ -78,13 +80,15 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <HelmetProvider> {/* Add HelmetProvider */}
+    <HelmetProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AppContent />
-          <InitializeStorageLoader />
+          <AuthProvider>
+            <AppContent />
+            <InitializeStorageLoader />
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </HelmetProvider>
