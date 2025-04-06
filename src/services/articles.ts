@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -31,8 +30,7 @@ export const fetchArticles = async () => {
     .from('articles')
     .select(`
       *,
-      category:categories(name),
-      author:profiles(first_name, last_name)
+      category:categories(name)
     `)
     .order('created_at', { ascending: false });
 
@@ -61,8 +59,7 @@ export const fetchArticlesByCategory = async (categorySlug: string) => {
     .from('articles')
     .select(`
       *,
-      category:categories(name),
-      author:profiles(first_name, last_name)
+      category:categories(name)
     `)
     .eq('category_id', categoryData.id)
     .eq('status', 'published')
@@ -81,8 +78,7 @@ export const fetchLatestArticles = async (limit = 5) => {
     .from('articles')
     .select(`
       *,
-      category:categories(name),
-      author:profiles(first_name, last_name)
+      category:categories(name)
     `)
     .eq('status', 'published')
     .order('created_at', { ascending: false })
@@ -101,8 +97,7 @@ export const fetchTrendingArticles = async (limit = 5) => {
     .from('articles')
     .select(`
       *,
-      category:categories(name),
-      author:profiles(first_name, last_name)
+      category:categories(name)
     `)
     .eq('status', 'published')
     .order('view_count', { ascending: false })
@@ -178,8 +173,7 @@ export const fetchArticleById = async (id: string) => {
     .from('articles')
     .select(`
       *,
-      category:categories(name),
-      author:profiles(first_name, last_name)
+      category:categories(name)
     `)
     .eq('id', id)
     .single();

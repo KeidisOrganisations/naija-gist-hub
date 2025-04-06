@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -31,8 +30,7 @@ export async function fetchArticles() {
     .from('articles')
     .select(`
       *,
-      category:categories(name),
-      author:profiles(first_name, last_name)
+      category:categories(name)
     `)
     .order('created_at', { ascending: false });
 
@@ -54,8 +52,7 @@ export async function fetchArticleById(id: string) {
     .from('articles')
     .select(`
       *,
-      category:categories(name),
-      author:profiles(first_name, last_name)
+      category:categories(name)
     `)
     .eq('id', id)
     .single();
