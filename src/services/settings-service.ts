@@ -33,7 +33,7 @@ export async function fetchSiteSettings() {
 
     if (error) {
       console.error("Error fetching site settings:", error);
-      // If no settings found, return default settings
+      // If no settings found, return null so we can create default settings
       if (error.code === 'PGRST116') {
         return null;
       }
@@ -46,7 +46,7 @@ export async function fetchSiteSettings() {
       throw error;
     }
     
-    return data;
+    return data as SiteSettings;
   } catch (error: any) {
     console.error("Error in fetchSiteSettings function:", error);
     throw error;
@@ -131,7 +131,7 @@ export async function saveSiteSettings(settings: SiteSettings) {
       description: "Site settings have been saved successfully.",
     });
     
-    return result;
+    return result as SiteSettings;
   } catch (error: any) {
     console.error("Error in saveSiteSettings function:", error);
     throw error;

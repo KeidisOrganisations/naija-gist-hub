@@ -176,6 +176,51 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          contactemail: string
+          copyrighttext: string
+          created_at: string
+          enablecomments: boolean
+          enabledarkmode: boolean
+          enablenewsletter: boolean
+          id: string
+          moderatecomments: boolean
+          sitedescription: string
+          sitename: string
+          sociallinks: Json
+          updated_at: string
+        }
+        Insert: {
+          contactemail?: string
+          copyrighttext?: string
+          created_at?: string
+          enablecomments?: boolean
+          enabledarkmode?: boolean
+          enablenewsletter?: boolean
+          id?: string
+          moderatecomments?: boolean
+          sitedescription?: string
+          sitename?: string
+          sociallinks?: Json
+          updated_at?: string
+        }
+        Update: {
+          contactemail?: string
+          copyrighttext?: string
+          created_at?: string
+          enablecomments?: boolean
+          enabledarkmode?: boolean
+          enablenewsletter?: boolean
+          id?: string
+          moderatecomments?: boolean
+          sitedescription?: string
+          sitename?: string
+          sociallinks?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
