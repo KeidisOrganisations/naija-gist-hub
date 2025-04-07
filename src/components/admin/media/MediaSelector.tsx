@@ -13,9 +13,9 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Upload, Image, FileText, Film, Music } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { fetchMediaItems, uploadMediaFile } from '@/services/media-service';
+import { fetchMediaItems, uploadMediaFile } from '@/services/media';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import type { MediaItem } from '@/services/media-service';
+import type { MediaItem } from '@/types/media';
 
 interface MediaSelectorProps {
   onSelect: (url: string) => void;

@@ -1,3 +1,4 @@
+
 // Define the MediaItem interface
 export interface MediaItem {
   id: string;

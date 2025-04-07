@@ -1,27 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-
-export interface MediaItem {
-  id: string;
-  file_name: string;
-  name: string;
-  file_size: number;
-  file_type: string;
-  file_path: string;
-  folder_id?: string | null;
-  uploaded_by?: string | null;
-  created_at?: string;
-  uploaded_at: string;
-}
-
-// Interface for MediaFolder (for future implementation)
-export interface MediaFolder {
-  id: string;
-  name: string;
-  parent_id?: string | null;
-  created_at: string;
-}
+import { MediaItem, MediaFolder } from '@/types/media';
 
 // Fetch media items
 export async function fetchMediaItems() {
@@ -120,7 +100,7 @@ export async function uploadMediaFile(file: File) {
     });
     
     // Transform the data to match our MediaItem interface
-    const mediaItem = {
+    const mediaItem: MediaItem = {
       id: data[0].id,
       file_name: data[0].name,
       name: data[0].name,

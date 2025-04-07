@@ -1,10 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { Button } from '@/components/ui/button'; // Add this import
+import { Button } from '@/components/ui/button'; 
 import { toast } from '@/hooks/use-toast';
 import { fetchMediaItems, fetchMediaFolders, uploadMediaFile, deleteMediaItem, createMediaFolder } from '@/services/media';
 import { MediaItem } from '@/types/media';
