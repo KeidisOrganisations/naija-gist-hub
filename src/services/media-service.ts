@@ -9,9 +9,18 @@ export interface MediaItem {
   file_size: number;
   file_type: string;
   file_path: string;
+  folder_id?: string | null;
   uploaded_by?: string | null;
-  created_at: string;
+  created_at?: string;
   uploaded_at: string;
+}
+
+// Interface for MediaFolder (for future implementation)
+export interface MediaFolder {
+  id: string;
+  name: string;
+  parent_id?: string | null;
+  created_at: string;
 }
 
 // Fetch media items
@@ -23,6 +32,7 @@ export async function fetchMediaItems() {
       .order('uploaded_at', { ascending: false });
 
     if (error) {
+      console.error("Error fetching media items:", error);
       toast({
         title: "Error fetching media",
         description: error.message,
@@ -39,13 +49,14 @@ export async function fetchMediaItems() {
       file_size: item.file_size,
       file_type: item.file_type,
       file_path: item.file_path,
+      folder_id: item.folder_id,
       uploaded_by: null,
       created_at: item.uploaded_at,
       uploaded_at: item.uploaded_at
     }));
     
     return mediaItems as MediaItem[];
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in fetchMediaItems:', error);
     return [];
   }
@@ -116,6 +127,7 @@ export async function uploadMediaFile(file: File) {
       file_size: data[0].file_size,
       file_type: data[0].file_type,
       file_path: data[0].file_path,
+      folder_id: data[0].folder_id,
       uploaded_by: null,
       created_at: data[0].uploaded_at,
       uploaded_at: data[0].uploaded_at
@@ -198,6 +210,40 @@ export async function deleteMediaItem(id: string) {
     return true;
   } catch (error: any) {
     console.error('Delete error:', error);
+    throw error;
+  }
+}
+
+// Fetch media folders (placeholder since media_folders doesn't exist in our schema yet)
+export async function fetchMediaFolders() {
+  try {
+    // Since we don't have a media_folders table yet in the schema, 
+    // we'll just return an empty array
+    return [];
+  } catch (error: any) {
+    console.error('Error in fetchMediaFolders:', error);
+    toast({
+      title: "Error loading folders",
+      description: error.message || "Could not load media folders",
+      variant: "destructive",
+    });
+    return [];
+  }
+}
+
+// Create a new folder (placeholder function since folders aren't implemented yet)
+export async function createMediaFolder(name: string, parent_id: string | null = null) {
+  try {
+    // Since we don't have media_folders table yet in the schema,
+    // we'll just return a mock response
+    return {
+      id: "mock-folder-id",
+      name,
+      parent_id,
+      created_at: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error creating folder:', error);
     throw error;
   }
 }
