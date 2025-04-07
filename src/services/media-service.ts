@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { MediaItem, MediaFolder } from '@/types/media';
@@ -219,23 +220,9 @@ export async function deleteMediaItem(id: string) {
 // Fetch media folders
 export async function fetchMediaFolders() {
   try {
-    // Check if the media_folders table exists by querying it
-    try {
-      const { data, error } = await supabase
-        .from('media_folders')
-        .select('*')
-        .order('name');
-
-      if (error) {
-        console.error("Error fetching media folders:", error);
-        return [];
-      }
-      
-      return (data || []) as MediaFolder[];
-    } catch (error) {
-      console.log("Media folders table might not exist yet:", error);
-      return [];
-    }
+    // Since the media_folders table doesn't exist yet, return an empty array
+    console.log("Media folders functionality not yet implemented");
+    return [] as MediaFolder[];
   } catch (error: any) {
     console.error('Error in fetchMediaFolders:', error);
     toast({
