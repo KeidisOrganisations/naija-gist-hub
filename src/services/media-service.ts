@@ -30,7 +30,7 @@ export async function fetchMediaItems() {
       file_type: item.file_type,
       file_path: item.file_path,
       folder_id: item.folder_id,
-      uploaded_by: null,
+      uploaded_by: item.uploaded_by || null,
       created_at: item.uploaded_at,
       uploaded_at: item.uploaded_at
     }));
@@ -45,6 +45,17 @@ export async function fetchMediaItems() {
 // Upload a media file
 export async function uploadMediaFile(file: File) {
   try {
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be signed in to upload media.",
+        variant: "destructive",
+      });
+      throw new Error("Authentication required");
+    }
+    
     // Generate a unique file name to avoid conflicts
     const timestamp = new Date().getTime();
     const fileExtension = file.name.split('.').pop();
@@ -81,6 +92,7 @@ export async function uploadMediaFile(file: File) {
         file_size: file.size,
         file_type: file.type,
         file_path: publicUrl,
+        uploaded_by: session.user.id
       }])
       .select();
 
@@ -108,7 +120,7 @@ export async function uploadMediaFile(file: File) {
       file_type: data[0].file_type,
       file_path: data[0].file_path,
       folder_id: data[0].folder_id,
-      uploaded_by: null,
+      uploaded_by: data[0].uploaded_by || null,
       created_at: data[0].uploaded_at,
       uploaded_at: data[0].uploaded_at
     };
@@ -123,6 +135,17 @@ export async function uploadMediaFile(file: File) {
 // Delete a media item
 export async function deleteMediaItem(id: string) {
   try {
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be signed in to delete media.",
+        variant: "destructive",
+      });
+      throw new Error("Authentication required");
+    }
+    
     // First, get the file path
     const { data: mediaItem, error: fetchError } = await supabase
       .from('media')
@@ -194,12 +217,22 @@ export async function deleteMediaItem(id: string) {
   }
 }
 
-// Fetch media folders (placeholder since media_folders doesn't exist in our schema yet)
+// Fetch media folders
 export async function fetchMediaFolders() {
   try {
-    // Since we don't have a media_folders table yet in the schema, 
-    // we'll just return an empty array
-    return [];
+    // When we have a media_folders table, we can update this function
+    const { data, error } = await supabase
+      .from('media_folders')
+      .select('*')
+      .order('name')
+      .catch(() => ({ data: null, error: null }));
+
+    if (error) {
+      console.error("Error fetching media folders:", error);
+      return [];
+    }
+    
+    return (data || []) as MediaFolder[];
   } catch (error: any) {
     console.error('Error in fetchMediaFolders:', error);
     toast({
@@ -211,9 +244,20 @@ export async function fetchMediaFolders() {
   }
 }
 
-// Create a new folder (placeholder function since folders aren't implemented yet)
+// Create a new folder
 export async function createMediaFolder(name: string, parent_id: string | null = null) {
   try {
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be signed in to create folders.",
+        variant: "destructive",
+      });
+      throw new Error("Authentication required");
+    }
+    
     // Since we don't have media_folders table yet in the schema,
     // we'll just return a mock response
     return {

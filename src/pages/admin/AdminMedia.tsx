@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { fetchMediaItems, fetchMediaFolders, uploadMediaFile, deleteMediaItem, createMediaFolder } from '@/services/media';
 import { MediaItem } from '@/types/media';
+import { useAuthStatus } from '@/hooks/useAuthStatus';
 
 // Import our newly created components
 import MediaHeader from '@/components/admin/media/MediaHeader';
@@ -19,7 +20,7 @@ type ViewMode = 'grid' | 'list';
 type MediaType = 'all' | 'image' | 'video' | 'document';
 
 const AdminMedia = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const { isAuthenticated, isLoading: authLoading, enableTestAuth } = useAuthStatus();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [mediaType, setMediaType] = useState<MediaType>('all');
@@ -30,14 +31,11 @@ const AdminMedia = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const auth = localStorage.getItem('naijaHubAdminAuth');
-    if (auth !== 'true') {
-      localStorage.setItem('naijaHubAdminAuth', 'true'); // Enable admin for demo purposes
-      setIsAuthenticated(true);
+    if (isAuthenticated === false && !authLoading) {
+      enableTestAuth();
     }
-  }, [navigate]);
+  }, [isAuthenticated, authLoading]);
 
-  // Fetch media items
   const { 
     data: mediaItems = [], 
     isLoading: isMediaLoading,
@@ -45,19 +43,19 @@ const AdminMedia = () => {
     refetch: refetchMedia
   } = useQuery({
     queryKey: ['mediaItems'],
-    queryFn: fetchMediaItems
+    queryFn: fetchMediaItems,
+    enabled: !!isAuthenticated
   });
 
-  // Fetch folders
   const { 
     data: folders = [], 
     isLoading: isFoldersLoading 
   } = useQuery({
     queryKey: ['mediaFolders'],
-    queryFn: fetchMediaFolders
+    queryFn: fetchMediaFolders,
+    enabled: !!isAuthenticated
   });
 
-  // Upload file mutation
   const uploadFileMutation = useMutation({
     mutationFn: (file: File) => {
       console.log('Uploading file:', file.name);
@@ -86,7 +84,6 @@ const AdminMedia = () => {
     }
   });
 
-  // Delete media mutation
   const deleteMediaMutation = useMutation({
     mutationFn: (id: string) => {
       console.log('Deleting media item:', id);
@@ -112,7 +109,6 @@ const AdminMedia = () => {
     }
   });
 
-  // Create folder mutation
   const createFolderMutation = useMutation({
     mutationFn: (name: string) => createMediaFolder(name),
     onSuccess: () => {
@@ -132,6 +128,23 @@ const AdminMedia = () => {
       });
     }
   });
+
+  if (authLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center gap-4">
+        <p>You need to be authenticated to access the media library.</p>
+        <Button onClick={enableTestAuth}>Sign In (Demo Mode)</Button>
+      </div>
+    );
+  }
 
   const filteredMediaItems = mediaItems.filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -167,7 +180,6 @@ const AdminMedia = () => {
   const handleDeleteSelected = () => {
     if (selectedFiles.length === 0) return;
     
-    // Delete first file only for now (can be expanded for bulk delete)
     deleteMediaMutation.mutate(selectedFiles[0]);
     setDeleteConfirmOpen(false);
   };
@@ -180,11 +192,9 @@ const AdminMedia = () => {
     if (e.target.files && e.target.files.length > 0) {
       setIsUploading(true);
       
-      // Upload first file only for now
       const file = e.target.files[0];
       uploadFileMutation.mutate(file);
       
-      // Reset input
       e.target.value = '';
     }
   };
