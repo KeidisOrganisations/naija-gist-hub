@@ -155,6 +155,7 @@ export type Database = {
           id: string
           name: string
           uploaded_at: string
+          uploaded_by: string | null
         }
         Insert: {
           file_path: string
@@ -164,6 +165,7 @@ export type Database = {
           id?: string
           name: string
           uploaded_at?: string
+          uploaded_by?: string | null
         }
         Update: {
           file_path?: string
@@ -173,6 +175,7 @@ export type Database = {
           id?: string
           name?: string
           uploaded_at?: string
+          uploaded_by?: string | null
         }
         Relationships: []
       }

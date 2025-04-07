@@ -220,11 +220,12 @@ export async function deleteMediaItem(id: string) {
 // Fetch media folders
 export async function fetchMediaFolders() {
   try {
-    // When we have a media_folders table, we can update this function
+    // First check if the media_folders table exists
     const { data, error } = await supabase
       .from('media_folders')
       .select('*')
       .order('name')
+      .then(response => response)
       .catch(() => ({ data: null, error: null }));
 
     if (error) {
@@ -258,7 +259,7 @@ export async function createMediaFolder(name: string, parent_id: string | null =
       throw new Error("Authentication required");
     }
     
-    // Since we don't have media_folders table yet in the schema,
+    // Since we don't have a media_folders table yet in the schema,
     // we'll just return a mock response
     return {
       id: "mock-folder-id",
@@ -266,7 +267,7 @@ export async function createMediaFolder(name: string, parent_id: string | null =
       parent_id,
       created_at: new Date().toISOString()
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating folder:', error);
     throw error;
   }
