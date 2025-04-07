@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { MediaItem, MediaFolder } from '@/types/media';
@@ -30,7 +29,7 @@ export async function fetchMediaItems() {
       file_type: item.file_type,
       file_path: item.file_path,
       folder_id: item.folder_id,
-      uploaded_by: item.uploaded_by || null,
+      uploaded_by: item.uploaded_by,
       created_at: item.uploaded_at,
       uploaded_at: item.uploaded_at
     }));
@@ -120,7 +119,7 @@ export async function uploadMediaFile(file: File) {
       file_type: data[0].file_type,
       file_path: data[0].file_path,
       folder_id: data[0].folder_id,
-      uploaded_by: data[0].uploaded_by || null,
+      uploaded_by: data[0].uploaded_by,
       created_at: data[0].uploaded_at,
       uploaded_at: data[0].uploaded_at
     };
@@ -220,20 +219,23 @@ export async function deleteMediaItem(id: string) {
 // Fetch media folders
 export async function fetchMediaFolders() {
   try {
-    // First check if the media_folders table exists
-    const { data, error } = await supabase
-      .from('media_folders')
-      .select('*')
-      .order('name')
-      .then(response => response)
-      .catch(() => ({ data: null, error: null }));
+    // Check if the media_folders table exists by querying it
+    try {
+      const { data, error } = await supabase
+        .from('media_folders')
+        .select('*')
+        .order('name');
 
-    if (error) {
-      console.error("Error fetching media folders:", error);
+      if (error) {
+        console.error("Error fetching media folders:", error);
+        return [];
+      }
+      
+      return (data || []) as MediaFolder[];
+    } catch (error) {
+      console.log("Media folders table might not exist yet:", error);
       return [];
     }
-    
-    return (data || []) as MediaFolder[];
   } catch (error: any) {
     console.error('Error in fetchMediaFolders:', error);
     toast({
