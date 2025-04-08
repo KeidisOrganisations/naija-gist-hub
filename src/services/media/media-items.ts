@@ -26,7 +26,21 @@ export async function fetchMediaItems() {
       throw error;
     }
 
-    return data as MediaItem[];
+    // Map the database fields to match the MediaItem interface
+    const mediaItems: MediaItem[] = data.map(item => ({
+      id: item.id,
+      file_name: item.name, // Map name to file_name for backward compatibility
+      name: item.name,
+      file_type: item.file_type,
+      file_size: item.file_size,
+      file_path: item.file_path,
+      folder_id: item.folder_id,
+      uploaded_at: item.uploaded_at,
+      uploaded_by: item.uploaded_by,
+      created_at: item.uploaded_at, // Use uploaded_at as created_at since it serves the same purpose
+    }));
+
+    return mediaItems;
   } catch (error: any) {
     console.error('Error in fetchMediaItems:', error);
     return [];
@@ -83,7 +97,22 @@ export async function uploadMediaFile(file: File) {
     }
     
     console.log('Media file uploaded successfully:', mediaData);
-    return mediaData;
+    
+    // Map the result to match the MediaItem interface
+    const mediaItem: MediaItem = {
+      id: mediaData.id,
+      file_name: mediaData.name,
+      name: mediaData.name,
+      file_type: mediaData.file_type,
+      file_size: mediaData.file_size,
+      file_path: mediaData.file_path,
+      folder_id: mediaData.folder_id,
+      uploaded_at: mediaData.uploaded_at,
+      uploaded_by: mediaData.uploaded_by,
+      created_at: mediaData.uploaded_at
+    };
+    
+    return mediaItem;
   } catch (error: any) {
     console.error('Error in uploadMediaFile:', error);
     toast({
