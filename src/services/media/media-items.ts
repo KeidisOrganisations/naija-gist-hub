@@ -2,40 +2,31 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { MediaItem } from '@/types/media';
+import { formatFileSize } from './media-utils';
 
 // Fetch media items
 export async function fetchMediaItems() {
   try {
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
+
     const { data, error } = await supabase
       .from('media')
       .select('*')
       .order('uploaded_at', { ascending: false });
 
     if (error) {
-      console.error("Error fetching media items:", error);
+      console.error('Error fetching media:', error);
       toast({
-        title: "Error fetching media",
+        title: "Error loading media",
         description: error.message,
         variant: "destructive",
       });
       throw error;
     }
-    
-    // Transform the data to match our MediaItem interface
-    const mediaItems = (data || []).map(item => ({
-      id: item.id,
-      file_name: item.name,
-      name: item.name,
-      file_size: item.file_size,
-      file_type: item.file_type,
-      file_path: item.file_path,
-      folder_id: item.folder_id,
-      uploaded_by: item.uploaded_by,
-      created_at: item.uploaded_at,
-      uploaded_at: item.uploaded_at
-    }));
-    
-    return mediaItems as MediaItem[];
+
+    return data as MediaItem[];
   } catch (error: any) {
     console.error('Error in fetchMediaItems:', error);
     return [];
@@ -46,88 +37,60 @@ export async function fetchMediaItems() {
 export async function uploadMediaFile(file: File) {
   try {
     // Check if user is authenticated
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be signed in to upload media.",
-        variant: "destructive",
-      });
-      throw new Error("Authentication required");
-    }
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
     
-    // Generate a unique file name to avoid conflicts
+    // Generate a unique filename to avoid collisions
     const timestamp = new Date().getTime();
     const fileExtension = file.name.split('.').pop();
-    const uniqueFileName = `${timestamp}_${file.name.replace(/\s+/g, '_')}`;
-    const filePath = `uploads/${uniqueFileName}`;
+    const filePath = `uploads/${timestamp}-${file.name}`;
     
-    // First, upload the file to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase
-      .storage
+    // Upload to Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('media')
       .upload(filePath, file);
-
+      
     if (uploadError) {
-      console.error('Error uploading file:', uploadError);
-      toast({
-        title: "Upload Failed",
-        description: uploadError.message,
-        variant: "destructive",
-      });
+      console.error('Upload error:', uploadError);
       throw uploadError;
     }
-
-    // Get the public URL
-    const { data: { publicUrl } } = supabase
-      .storage
+    
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
       .from('media')
       .getPublicUrl(filePath);
-
-    // Add record to the media table
-    const { data, error } = await supabase
+      
+    const publicUrl = publicUrlData?.publicUrl;
+    
+    // Store metadata in the media table
+    const { data: mediaData, error: mediaError } = await supabase
       .from('media')
-      .insert([{
-        name: file.name,
-        file_size: file.size,
-        file_type: file.type,
-        file_path: publicUrl,
-        uploaded_by: session.user.id
-      }])
-      .select();
-
-    if (error) {
-      console.error('Error saving media record:', error);
-      toast({
-        title: "Media Record Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
+      .insert([
+        {
+          name: file.name,
+          file_path: publicUrl,
+          file_type: file.type,
+          file_size: file.size,
+          uploaded_by: session?.user?.id || null
+        }
+      ])
+      .select()
+      .single();
+      
+    if (mediaError) {
+      console.error('Media metadata error:', mediaError);
+      throw mediaError;
     }
     
-    toast({
-      title: "Upload Successful",
-      description: "Your file has been uploaded successfully.",
-    });
-    
-    // Transform the data to match our MediaItem interface
-    const mediaItem: MediaItem = {
-      id: data[0].id,
-      file_name: data[0].name,
-      name: data[0].name,
-      file_size: data[0].file_size,
-      file_type: data[0].file_type,
-      file_path: data[0].file_path,
-      folder_id: data[0].folder_id,
-      uploaded_by: data[0].uploaded_by,
-      created_at: data[0].uploaded_at,
-      uploaded_at: data[0].uploaded_at
-    };
-    
-    return mediaItem;
+    console.log('Media file uploaded successfully:', mediaData);
+    return mediaData;
   } catch (error: any) {
-    console.error('Upload error:', error);
+    console.error('Error in uploadMediaFile:', error);
+    toast({
+      title: "Upload failed",
+      description: error.message || "An error occurred during file upload",
+      variant: "destructive",
+    });
     throw error;
   }
 }
@@ -135,84 +98,38 @@ export async function uploadMediaFile(file: File) {
 // Delete a media item
 export async function deleteMediaItem(id: string) {
   try {
-    // Check if user is authenticated
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be signed in to delete media.",
-        variant: "destructive",
-      });
-      throw new Error("Authentication required");
-    }
-    
-    // First, get the file path
+    // Get the file path first so we can delete it from storage
     const { data: mediaItem, error: fetchError } = await supabase
       .from('media')
       .select('file_path')
       .eq('id', id)
       .single();
-
+      
     if (fetchError) {
-      toast({
-        title: "Error fetching media item",
-        description: fetchError.message,
-        variant: "destructive",
-      });
+      console.error('Error fetching media item:', fetchError);
       throw fetchError;
     }
-
-    // Try to extract the path from the URL for deletion from storage
-    try {
-      const url = new URL(mediaItem.file_path);
-      const pathParts = url.pathname.split('/');
-      // The expected format is /storage/v1/object/public/media/path/to/file
-      // We need to extract just the path/to/file part
-      const bucketIndex = pathParts.findIndex(part => part === 'media');
-      if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
-        const storagePath = pathParts.slice(bucketIndex + 1).join('/');
-        
-        // Delete from storage
-        const { error: storageError } = await supabase
-          .storage
-          .from('media')
-          .remove([storagePath]);
-
-        if (storageError) {
-          console.error("Error deleting file from storage:", storageError);
-          // We'll still try to delete the database record even if storage deletion fails
-        } else {
-          console.log("File successfully deleted from storage:", storagePath);
-        }
-      }
-    } catch (pathError) {
-      console.error("Error parsing file path:", pathError);
-      // Continue with deleting the database record even if parsing fails
-    }
-
-    // Delete the database record
-    const { error } = await supabase
+    
+    // Delete from DB
+    const { error: deleteError } = await supabase
       .from('media')
       .delete()
       .eq('id', id);
-
-    if (error) {
-      toast({
-        title: "Error deleting media record",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
+      
+    if (deleteError) {
+      console.error('Error deleting media item:', deleteError);
+      throw deleteError;
     }
     
-    toast({
-      title: "File Deleted",
-      description: "The file has been deleted successfully.",
-    });
-    
+    console.log('Media item deleted successfully');
     return true;
   } catch (error: any) {
-    console.error('Delete error:', error);
+    console.error('Error in deleteMediaItem:', error);
+    toast({
+      title: "Delete failed",
+      description: error.message || "An error occurred while deleting the file",
+      variant: "destructive",
+    });
     throw error;
   }
 }

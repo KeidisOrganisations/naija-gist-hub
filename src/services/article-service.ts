@@ -80,9 +80,19 @@ export async function createArticle(article: Omit<Article, 'id'>) {
   try {
     console.log("Creating new article:", article);
     
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
+    
+    const articleWithAuthor = {
+      ...article,
+      author_id: session?.user?.id || article.author_id
+    };
+    
+    console.log("Article data with author:", articleWithAuthor);
+    
     const { data, error } = await supabase
       .from('articles')
-      .insert([article])
+      .insert([articleWithAuthor])
       .select();
 
     if (error) {
@@ -124,9 +134,17 @@ export async function updateArticle(id: string, article: Partial<Article>) {
   try {
     console.log(`Updating article with ID ${id}:`, article);
     
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
+    
+    const articleData = { ...article };
+    if (article.author_id === null && session?.user) {
+      articleData.author_id = session.user.id;
+    }
+    
     const { data, error } = await supabase
       .from('articles')
-      .update(article)
+      .update(articleData)
       .eq('id', id)
       .select();
 
