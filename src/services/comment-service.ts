@@ -66,15 +66,24 @@ export async function fetchComments(articleId: string): Promise<Comment[]> {
 }
 
 // Post a new comment
-export async function postComment(comment: Omit<Comment, 'id' | 'created_at' | 'status'>): Promise<Comment | null> {
+export async function postComment(
+  comment: Omit<Comment, 'id' | 'created_at' | 'status' | 'user_id'>
+): Promise<Comment | null> {
   try {
-    // In a real app, you might want to validate the input here
+    // Get the current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
+    
+    // Set user_id from authenticated session if available
+    const commentData = {
+      ...comment,
+      status: 'pending', // Comments might need approval
+      user_id: session?.user?.id || null
+    };
+
     const { data, error } = await supabase
       .from('comments')
-      .insert([{
-        ...comment,
-        status: 'pending' // Comments might need approval
-      }])
+      .insert([commentData])
       .select()
       .single();
 
@@ -102,6 +111,15 @@ export async function postComment(comment: Omit<Comment, 'id' | 'created_at' | '
 // Delete a comment
 export async function deleteComment(commentId: string): Promise<boolean> {
   try {
+    // Get the current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
+    
+    if (!session?.user?.id) {
+      throw new Error('Authentication required to delete comments');
+    }
+    
+    // RLS will ensure users can only delete their own comments
     const { error } = await supabase
       .from('comments')
       .delete()
@@ -131,6 +149,15 @@ export async function deleteComment(commentId: string): Promise<boolean> {
 // Update an existing comment
 export async function updateComment(commentId: string, content: string): Promise<Comment | null> {
   try {
+    // Get the current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
+    
+    if (!session?.user?.id) {
+      throw new Error('Authentication required to update comments');
+    }
+    
+    // RLS will ensure users can only update their own comments
     const { data, error } = await supabase
       .from('comments')
       .update({ content })

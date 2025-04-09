@@ -54,6 +54,10 @@ export async function uploadMediaFile(file: File) {
     const { data: sessionData } = await supabase.auth.getSession();
     const session = sessionData?.session;
     
+    if (!session?.user?.id) {
+      throw new Error('Authentication required to upload files');
+    }
+    
     // Generate a unique filename to avoid collisions
     const timestamp = new Date().getTime();
     const fileExtension = file.name.split('.').pop();
@@ -85,7 +89,7 @@ export async function uploadMediaFile(file: File) {
           file_path: publicUrl,
           file_type: file.type,
           file_size: file.size,
-          uploaded_by: session?.user?.id || null
+          uploaded_by: session.user.id // Always set user ID for RLS
         }
       ])
       .select()
@@ -127,6 +131,14 @@ export async function uploadMediaFile(file: File) {
 // Delete a media item
 export async function deleteMediaItem(id: string) {
   try {
+    // Check user authentication
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
+    
+    if (!session?.user?.id) {
+      throw new Error('Authentication required to delete files');
+    }
+    
     // Get the file path first so we can delete it from storage
     const { data: mediaItem, error: fetchError } = await supabase
       .from('media')
@@ -139,7 +151,7 @@ export async function deleteMediaItem(id: string) {
       throw fetchError;
     }
     
-    // Delete from DB
+    // Delete from DB - RLS will ensure only owners can delete
     const { error: deleteError } = await supabase
       .from('media')
       .delete()

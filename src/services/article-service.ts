@@ -83,9 +83,13 @@ export async function createArticle(article: Omit<Article, 'id'>) {
     const { data: sessionData } = await supabase.auth.getSession();
     const session = sessionData?.session;
     
+    if (!session?.user?.id) {
+      throw new Error('Authentication required to create articles');
+    }
+    
     const articleWithAuthor = {
       ...article,
-      author_id: session?.user?.id || article.author_id
+      author_id: session.user.id // Always set the author to the current user
     };
     
     console.log("Article data with author:", articleWithAuthor);
@@ -137,14 +141,14 @@ export async function updateArticle(id: string, article: Partial<Article>) {
     const { data: sessionData } = await supabase.auth.getSession();
     const session = sessionData?.session;
     
-    const articleData = { ...article };
-    if (article.author_id === null && session?.user) {
-      articleData.author_id = session.user.id;
+    if (!session?.user?.id) {
+      throw new Error('Authentication required to update articles');
     }
     
+    // RLS will ensure only the author can update their own articles
     const { data, error } = await supabase
       .from('articles')
-      .update(articleData)
+      .update(article)
       .eq('id', id)
       .select();
 
@@ -184,26 +188,39 @@ export async function updateArticle(id: string, article: Partial<Article>) {
 
 // Delete an article
 export async function deleteArticle(id: string) {
-  const { error } = await supabase
-    .from('articles')
-    .delete()
-    .eq('id', id);
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
+    
+    if (!session?.user?.id) {
+      throw new Error('Authentication required to delete articles');
+    }
+    
+    // RLS will ensure only the author can delete their own articles
+    const { error } = await supabase
+      .from('articles')
+      .delete()
+      .eq('id', id);
 
-  if (error) {
+    if (error) {
+      toast({
+        title: "Error deleting article",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+    
     toast({
-      title: "Error deleting article",
-      description: error.message,
-      variant: "destructive",
+      title: "Article deleted",
+      description: "The article has been deleted successfully.",
     });
+    
+    return true;
+  } catch (error) {
+    console.error("Error in deleteArticle function:", error);
     throw error;
   }
-  
-  toast({
-    title: "Article deleted",
-    description: "The article has been deleted successfully.",
-  });
-  
-  return true;
 }
 
 // Fetch categories
