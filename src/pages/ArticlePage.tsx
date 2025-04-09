@@ -28,13 +28,15 @@ interface Article {
   };
 }
 
-// Function to fetch article by slug
-const fetchArticleBySlug = async (slug: string | undefined) => {
-  if (!slug) throw new Error('Article slug is missing');
+// Function to fetch article by slug or id
+const fetchArticle = async (params: { id?: string; slug?: string }) => {
+  const { id, slug } = params;
   
-  console.log(`Fetching article with slug: ${slug}`);
+  if (!id && !slug) {
+    throw new Error('Article identifier is missing');
+  }
   
-  const { data, error } = await supabase
+  let query = supabase
     .from('articles')
     .select(`
       *,
@@ -42,9 +44,18 @@ const fetchArticleBySlug = async (slug: string | undefined) => {
         id, name, slug
       )
     `)
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .single();
+    .eq('status', 'published');
+    
+  // Apply the appropriate filter based on what we have
+  if (id) {
+    console.log(`Fetching article with ID: ${id}`);
+    query = query.eq('id', id);
+  } else if (slug) {
+    console.log(`Fetching article with slug: ${slug}`);
+    query = query.eq('slug', slug);
+  }
+  
+  const { data, error } = await query.single();
   
   if (error) {
     console.error('Error fetching article:', error);
@@ -57,7 +68,7 @@ const fetchArticleBySlug = async (slug: string | undefined) => {
   
   console.log('Article found:', data);
   
-  // Instead of immediately incrementing view count, we'll do it in the background
+  // Increment view count in the background
   incrementViewCount(data.id, data.view_count);
   
   return data;
@@ -78,7 +89,8 @@ const incrementViewCount = async (articleId: string, currentViewCount: number) =
 };
 
 const ArticlePage = () => {
-  const { slug } = useParams<{ slug: string }>();
+  // Get both potential parameters
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
   const navigate = useNavigate();
   
   // Use React Query for data fetching with automatic caching
@@ -88,8 +100,8 @@ const ArticlePage = () => {
     error, 
     refetch 
   } = useQuery({
-    queryKey: ['article', slug],
-    queryFn: () => fetchArticleBySlug(slug),
+    queryKey: ['article', id || slug],
+    queryFn: () => fetchArticle({ id, slug }),
     retry: 1,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     meta: {

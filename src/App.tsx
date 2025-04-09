@@ -60,6 +60,7 @@ const AppContent = () => {
       <Route path="/search" element={<SearchResults />} />
       <Route path="/category/:slug" element={<CategoryPage />} />
       <Route path="/article/:id" element={<ArticlePage />} />
+      <Route path="/article/:slug" element={<ArticlePage />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin/articles" element={<AdminArticleList />} />
