@@ -32,6 +32,20 @@ import SubmitGuide from "./pages/SubmitGuide";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 
+// New category pages
+import HealthWellnessPage from "./pages/category/HealthWellness";
+import PersonalFinancePage from "./pages/category/PersonalFinance";
+import CareerDevelopmentPage from "./pages/category/CareerDevelopment";
+import DIYProjectsPage from "./pages/category/DIYProjects";
+import SelfImprovementPage from "./pages/category/SelfImprovement";
+
+// New article template pages
+import HomeWorkoutArticle from "./pages/articles/HomeWorkoutArticle";
+import BudgetingArticle from "./pages/articles/BudgetingArticle";
+import CVWritingArticle from "./pages/articles/CVWritingArticle";
+import WoodenShelfArticle from "./pages/articles/WoodenShelfArticle";
+import ProductivityHacksArticle from "./pages/articles/ProductivityHacksArticle";
+
 // Create a new client with default settings
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,9 +72,27 @@ const AppContent = () => {
       <Route path="/signup" element={<SignUp />} />
       <Route path="/login" element={<Login />} />
       <Route path="/search" element={<SearchResults />} />
+      
+      {/* General category and article routes */}
       <Route path="/category/:slug" element={<CategoryPage />} />
       <Route path="/article/:id" element={<ArticlePage />} />
       <Route path="/article/:slug" element={<ArticlePage />} />
+      
+      {/* New specific category pages */}
+      <Route path="/category/health-wellness" element={<HealthWellnessPage />} />
+      <Route path="/category/personal-finance" element={<PersonalFinancePage />} />
+      <Route path="/category/career-development" element={<CareerDevelopmentPage />} />
+      <Route path="/category/diy-projects" element={<DIYProjectsPage />} />
+      <Route path="/category/self-improvement" element={<SelfImprovementPage />} />
+      
+      {/* New specific article template pages */}
+      <Route path="/article/how-to-create-a-simple-home-workout-routine" element={<HomeWorkoutArticle />} />
+      <Route path="/article/how-to-start-budgeting-for-your-first-job" element={<BudgetingArticle />} />
+      <Route path="/article/how-to-write-a-cv-that-gets-you-noticed" element={<CVWritingArticle />} />
+      <Route path="/article/how-to-build-a-wooden-shelf-with-simple-tools" element={<WoodenShelfArticle />} />
+      <Route path="/article/7-life-hacks-to-boost-productivity-every-day" element={<ProductivityHacksArticle />} />
+      
+      {/* Admin routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin/articles" element={<AdminArticleList />} />

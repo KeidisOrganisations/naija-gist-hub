@@ -63,6 +63,33 @@ const Footer = () => {
             <div>
               <h3 className="text-lg font-medium mb-4 font-heading">Categories</h3>
               <ul className="space-y-2">
+                {/* New Categories */}
+                <li>
+                  <Link to="/category/health-wellness" className="text-gray-300 hover:text-naija-yellow transition-colors">
+                    Health & Wellness
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/category/personal-finance" className="text-gray-300 hover:text-naija-yellow transition-colors">
+                    Personal Finance
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/category/career-development" className="text-gray-300 hover:text-naija-yellow transition-colors">
+                    Career Development
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/category/diy-projects" className="text-gray-300 hover:text-naija-yellow transition-colors">
+                    DIY Projects
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/category/self-improvement" className="text-gray-300 hover:text-naija-yellow transition-colors">
+                    Self-improvement
+                  </Link>
+                </li>
+                {/* Original Categories */}
                 <li>
                   <Link to="/category/tech" className="text-gray-300 hover:text-naija-yellow transition-colors">
                     Tech
@@ -71,16 +98,6 @@ const Footer = () => {
                 <li>
                   <Link to="/category/life" className="text-gray-300 hover:text-naija-yellow transition-colors">
                     Life
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/category/money" className="text-gray-300 hover:text-naija-yellow transition-colors">
-                    Money
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/category/relationships" className="text-gray-300 hover:text-naija-yellow transition-colors">
-                    Relationships
                   </Link>
                 </li>
                 <li>

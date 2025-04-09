@@ -4,7 +4,16 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import SearchBar from './SearchBar'; // Add this import
+import SearchBar from './SearchBar';
+import { 
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+import { cn } from '@/lib/utils';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -48,19 +57,106 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-4">
             <Link to="/" className={linkClasses}>
               Home
             </Link>
-            <Link to="/category/tech" className={linkClasses}>
-              Tech
-            </Link>
-            <Link to="/category/business" className={linkClasses}>
-              Business
-            </Link>
-            <Link to="/category/life" className={linkClasses}>
-              Lifestyle
-            </Link>
+            
+            {/* Categories Navigation Menu */}
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className={linkClasses}>
+                    Categories
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link to="/category/health-wellness" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Health & Wellness</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Tips for better physical and mental health
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link to="/category/personal-finance" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Personal Finance</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Budgeting, saving, and investment advice
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link to="/category/career-development" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Career Development</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Professional growth and job seeking strategies
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link to="/category/diy-projects" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">DIY Projects</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Creative and practical hands-on projects
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link to="/category/self-improvement" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Self-improvement</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Productivity hacks and personal growth tips
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link to="/category/tech" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Tech</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Latest technology news and guides
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link to="/category/business" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Business</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Business insights and entrepreneurship
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link to="/category/life" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Lifestyle</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Fashion, food, travel, and relationships
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+
             <Link to="/about" className={linkClasses}>
               About
             </Link>
@@ -101,6 +197,23 @@ const Navbar = () => {
               <Link to="/" className="py-2 text-gray-800 hover:text-naija-green">
                 Home
               </Link>
+              {/* New Categories */}
+              <Link to="/category/health-wellness" className="py-2 text-gray-800 hover:text-naija-green">
+                Health & Wellness
+              </Link>
+              <Link to="/category/personal-finance" className="py-2 text-gray-800 hover:text-naija-green">
+                Personal Finance
+              </Link>
+              <Link to="/category/career-development" className="py-2 text-gray-800 hover:text-naija-green">
+                Career Development
+              </Link>
+              <Link to="/category/diy-projects" className="py-2 text-gray-800 hover:text-naija-green">
+                DIY Projects
+              </Link>
+              <Link to="/category/self-improvement" className="py-2 text-gray-800 hover:text-naija-green">
+                Self-improvement
+              </Link>
+              {/* Original Categories */}
               <Link to="/category/tech" className="py-2 text-gray-800 hover:text-naija-green">
                 Tech
               </Link>
