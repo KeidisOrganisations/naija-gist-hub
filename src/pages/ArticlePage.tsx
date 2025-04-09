@@ -94,18 +94,20 @@ const ArticlePage = () => {
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     meta: {
       errorToast: true
-    },
-    onSettled: (data, error: Error | null) => {
-      if (error) {
-        console.error('Error in article query:', error);
-        toast({
-          title: "Article Error",
-          description: error.message || "Could not load the article",
-          variant: "destructive",
-        });
-      }
     }
   });
+  
+  // Handle errors separately instead of using onSettled
+  useEffect(() => {
+    if (error) {
+      console.error('Error in article query:', error);
+      toast({
+        title: "Article Error",
+        description: (error as Error).message || "Could not load the article",
+        variant: "destructive",
+      });
+    }
+  }, [error]);
   
   if (isLoading) {
     return (
