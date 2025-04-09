@@ -9,6 +9,7 @@ import SEOHead from '@/components/SEOHead';
 import ArticleContainer from '@/components/article/ArticleContainer';
 import ArticleNotFound from '@/components/article/ArticleNotFound';
 import { toast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
 interface Article {
   id: string;
@@ -27,68 +28,79 @@ interface Article {
   };
 }
 
+// Function to fetch article by slug
+const fetchArticleBySlug = async (slug: string | undefined) => {
+  if (!slug) throw new Error('Article slug is missing');
+  
+  console.log(`Fetching article with slug: ${slug}`);
+  
+  const { data, error } = await supabase
+    .from('articles')
+    .select(`
+      *,
+      categories (
+        id, name, slug
+      )
+    `)
+    .eq('slug', slug)
+    .eq('status', 'published')
+    .single();
+  
+  if (error) {
+    console.error('Error fetching article:', error);
+    throw error;
+  }
+  
+  if (!data) {
+    throw new Error('Article not found');
+  }
+  
+  console.log('Article found:', data);
+  
+  // Instead of immediately incrementing view count, we'll do it in the background
+  incrementViewCount(data.id, data.view_count);
+  
+  return data;
+};
+
+// Function to increment view count in the background
+const incrementViewCount = async (articleId: string, currentViewCount: number) => {
+  try {
+    const { error } = await supabase
+      .from('articles')
+      .update({ view_count: currentViewCount + 1 })
+      .eq('id', articleId);
+    
+    if (error) console.error('Error updating view count:', error);
+  } catch (err) {
+    console.error('Failed to update view count:', err);
+  }
+};
+
 const ArticlePage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [article, setArticle] = useState<Article | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   
-  const fetchArticle = async () => {
-    if (!slug) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      console.log(`Fetching article with slug: ${slug}`);
-      
-      const { data, error } = await supabase
-        .from('articles')
-        .select(`
-          *,
-          categories (
-            id, name, slug
-          )
-        `)
-        .eq('slug', slug)
-        .eq('status', 'published')
-        .single();
-      
-      if (error) {
-        console.error('Error fetching article:', error);
-        throw error;
-      }
-      
-      if (data) {
-        console.log('Article found:', data);
-        setArticle(data);
-        
-        // Increment view count
-        const { error: updateError } = await supabase
-          .from('articles')
-          .update({ view_count: data.view_count + 1 })
-          .eq('id', data.id);
-        
-        if (updateError) console.error('Error updating view count:', updateError);
-      }
-    } catch (err: any) {
-      console.error('Error in fetchArticle:', err);
-      setError(err.message || 'Failed to load article');
-      
+  // Use React Query for data fetching with automatic caching
+  const { 
+    data: article, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery({
+    queryKey: ['article', slug],
+    queryFn: () => fetchArticleBySlug(slug),
+    retry: 1,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    onError: (err: any) => {
+      console.error('Error in article query:', err);
       toast({
         title: "Article Error",
         description: err.message || "Could not load the article",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
-  
-  useEffect(() => {
-    fetchArticle();
-  }, [slug]);
+  });
   
   if (isLoading) {
     return (
@@ -107,7 +119,7 @@ const ArticlePage = () => {
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
-          <ArticleNotFound error={error} onRetry={fetchArticle} />
+          <ArticleNotFound error={(error as Error)?.message || null} onRetry={refetch} />
         </main>
         <Footer />
       </div>
