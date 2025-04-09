@@ -92,13 +92,18 @@ const ArticlePage = () => {
     queryFn: () => fetchArticleBySlug(slug),
     retry: 1,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    onError: (err: any) => {
-      console.error('Error in article query:', err);
-      toast({
-        title: "Article Error",
-        description: err.message || "Could not load the article",
-        variant: "destructive",
-      });
+    meta: {
+      errorToast: true
+    },
+    onSettled: (data, error: Error | null) => {
+      if (error) {
+        console.error('Error in article query:', error);
+        toast({
+          title: "Article Error",
+          description: error.message || "Could not load the article",
+          variant: "destructive",
+        });
+      }
     }
   });
   
