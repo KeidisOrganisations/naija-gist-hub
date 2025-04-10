@@ -1,8 +1,7 @@
-
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, Share2, Clock, Eye, BookmarkPlus, Heart, Tool, Timer, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Share2, Clock, Eye, BookmarkPlus, Heart, Hammer, Timer, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import SEOHead from '@/components/SEOHead';
@@ -101,7 +100,7 @@ const WoodenShelfArticle = () => {
             </span>
             
             <span className="flex items-center">
-              <Tool className="mr-1 h-4 w-4" />
+              <Hammer className="mr-1 h-4 w-4" />
               Difficulty: Beginner
             </span>
           </div>
